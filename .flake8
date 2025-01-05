@@ -1,0 +1,171 @@
+# flake8 7.1.0
+
+[flake8]
+# http://flake8.pycqa.org/en/7.1.0/user/options.html
+# http://flake8.pycqa.org/en/7.1.0/user/error-codes.html
+# https://pycodestyle.readthedocs.io/en/latest/intro.html#error-codes
+# https://pypi.org/project/flake8-bugbear/
+# https://pypi.org/project/flake8-import-order/
+
+################################## TOOL ########################################
+
+# Specify the number of subprocesses that Flake8 will use to run checks in
+# parallel.
+jobs = auto
+
+################################## PLUGINS #####################################
+
+# Require specific plugins to be installed before running.
+require-plugins =
+
+# Enable off-by-default extensions.
+enable-extensions =
+
+################################## OUTPUT ######################################
+
+################### Verbosity ##############################
+
+# Decrease the verbosity of Flake8's output.
+quiet = 0
+
+################### Formatting #############################
+
+# Select the formatter used to display errors to the user.
+format = default
+
+# Print the total number of errors.
+count = True
+
+# Print the source code generating the error/warning in question.
+show-source = True
+
+# Count the number of occurrences of each error/warning code and print a report.
+statistics = True
+
+################### Targets ################################
+
+# Also print output to stdout if output-file has been configured.
+tee = True
+
+################################## FILE PATTERNS ###############################
+
+# Provide a comma-separate list of glob patterns to include for checks.
+filename =
+    # python files
+    *.py,
+
+# Provide a comma-separated list of glob patterns to exclude from checks.
+exclude =
+    # git folder
+    .git,
+    # python cache
+    __pycache__,
+    # pytest cache
+    .pytest_cache,
+    # mypy cache
+    .mypy_cache,
+
+# Provide a comma-separated list of glob patterns to add to the list of excluded
+# ones.
+# extend-exclude =
+
+################################## LINTING #####################################
+
+# Set the number of spaces used for indentation.
+indent-size = 2
+
+################### Environment ############################
+
+# Provide a custom list of builtin functions, objects, names, etc.
+builtins =
+
+################### Options ################################
+
+# Report all errors, even if it is on the same line as a '# NOQA' comment.
+disable-noqa = False
+
+# Set the maximum length that any line (with some exceptions) may be.
+max-line-length = 79
+
+# Set the maximum allowed McCabe complexity value for a block of code.
+max-complexity = 10
+
+# Toggle whether pycodestyle should enforce matching the indentation of the
+# opening bracket's line.
+# (effects E131, E133)
+hang-closing = True
+
+################### Rules ##################################
+
+# Specify the list of error codes you wish Flake8 to report.
+select =
+    E, W,   # flake8/pycodestyle
+    F,      # flake8/pyflakes
+    C,      # flake8/mccabe
+    B, B9,  # flake8-bugbear
+    # I,    # flake8-import-order (conflicts with isort)
+
+# Specify a list of codes to add to the list of selected ones.
+# extend-select =
+
+# Specify a list of codes to ignore.
+ignore =
+    # - [E126] continuation line over-indented for hanging indent
+    #   (conflicts with black)
+    E126,
+    # - [E133] closing bracket is missing indentation
+    #   (conflicts with black)
+    E133,
+    # - [E203] whitespace before ':'
+    #   (conflicts with black)
+    E203,
+    # - [E501] line too long
+    #   (conflicts with B950)
+    E501,
+    # - [E701] multiple statements on one line (colon)
+    #   (conflicts with black)
+    # - [E704] multiple statements on one line (def)
+    #   (conflicts with black)
+    E701, E704,
+    # - [W503] line break before binary operator
+    #   (conflicts with black)
+    # - [W505] doc line too long
+    W503, W505,
+    # - [B902] Invalid first argument used for method.
+    #   (conflicts with pylance:reportSelfClsParameterName)
+    B009, B010,
+    # - [B009] Do not call `getattr(x, 'attr')`, instead use normal property
+    #   access: `x.attr`.
+    # - [B010] Do not call `setattr(x, 'attr')`, instead use normal property
+    #   access: `x.attr = val`.
+    B902,
+    # - [B907]  Consider replacing `f"'{foo}'"` with `f"{foo!r}"` which is both
+    #   easier to read and will escape quotes inside foo if that would appear.
+    # B907,
+    # - [B950] Line too long.
+    # B950,
+
+# Specify a list of codes to add to the list of ignored ones.
+# extend-ignore =
+
+# Specify a list of mappings of files and the codes that should be ignored for
+# the entirety of the file.
+per-file-ignores =
+    # - [E301] expected 1 blank line, found 0
+    # - [E302] expected 2 blank lines, found 0
+    # - [E305] expected 2 blank lines after end of function
+    # - [F401] `module` imported but unused
+    # - [F403] 'from `module` import *' used; unable to
+    #   detect undefined names
+    *.pyi:E301,E302,E305
+    __init__.py:F401,F403
+    __main__.py:F401,F403
+    schema.py:B950
+
+################### Docstring ##############################
+
+# Enable PyFlakes syntax checking of doctests in docstrings.
+doctests = True
+
+# Set the maximum length that a comment or docstring line may be.
+max-doc-length = 79
