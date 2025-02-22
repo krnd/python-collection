@@ -1,39 +1,24 @@
 import json
-import sys
+import tomllib
 from dataclasses import dataclass
 from typing import Generic, Type, TypedDict, TypeVar
 
 import jsonschema
 
 
-if sys.version_info < (3, 11):
-    import tomli as tomllib
-else:
-    import tomllib
+# ################################ PACKAGE #####################################
 
 
-# ################################ METADATA ####################################
-
-
-__pkgname__ = "ftoml"
+__sname__ = "ftoml"
 __version__ = "1.0"
+__description__ = ...
 
-__dependencies__ = (
-    ("tomli",)
-    if sys.version_info < (3, 11)
-    else ()
-    # <format-newline>
-) + ("jsonschema",)
-
-
-# ################################ GLOBALS #####################################
+__requires__ = ("jsonschema",)
 
 
 __all__ = (
     # fmt: off
     "TomlSchema",
-    "schema",
-    "load",
     # fmt: on
 )
 
@@ -50,12 +35,12 @@ TSCHEMA = TypeVar(
 # ################################ TYPES #######################################
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(eq=False, frozen=True, slots=True)
 class TomlSchema(Generic[TSCHEMA]):
     decl: TSCHEMA
 
 
-# ################################ INTERFACE ###################################
+# ################################ FUNCTIONS ###################################
 
 
 def schema(
@@ -68,7 +53,7 @@ def schema(
     with open(path, "r", encoding="utf-8") as file:
         s = file.read()
 
-    decl = json.loads(s)
+    decl = json.loads(s)  # type: ignore
 
     schema = TomlSchema(decl)
 
