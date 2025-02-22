@@ -5,23 +5,19 @@ from typing import Generic, Type, TypedDict, TypeVar
 import jsonschema
 
 
-# ################################ METADATA ####################################
+# ################################ PACKAGE #####################################
 
 
-__pkgname__ = "fjson"
+__sname__ = "fjson"
 __version__ = "1.0"
+__description__ = ...
 
-__dependencies__ = ("jsonschema",)
-
-
-# ################################ GLOBALS #####################################
+__requires__ = ("jsonschema",)
 
 
 __all__ = (
     # fmt: off
     "JsonSchema",
-    "schema",
-    "load",
     # fmt: on
 )
 
@@ -38,12 +34,12 @@ TSCHEMA = TypeVar(
 # ################################ TYPES #######################################
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(eq=False, frozen=True, slots=True)
 class JsonSchema(Generic[TSCHEMA]):
     decl: TSCHEMA
 
 
-# ################################ INTERFACE ###################################
+# ################################ FUNCTIONS ###################################
 
 
 def schema(
@@ -56,7 +52,7 @@ def schema(
     with open(path, "r", encoding="utf-8") as file:
         s = file.read()
 
-    decl = json.loads(s)
+    decl = json.loads(s)  # type: ignore
 
     schema = JsonSchema(decl)
 
