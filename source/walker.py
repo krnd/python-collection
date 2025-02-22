@@ -1,36 +1,35 @@
+import fnmatch
 import os
 import os.path
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from os import DirEntry
 from typing import (
-    Callable,
     Final,
     Generic,
     Iterable,
     Iterator,
     List,
+    Literal,
     NamedTuple,
     Self,
-    Set,
     TypeVar,
 )
 
 
-# ################################ METADATA ####################################
+# ################################ PACKAGE #####################################
 
 
-__pkgname__ = "treewalker"
+__sname__ = "walker"
 __version__ = "1.0"
+__description__ = ...
 
-__dependencies__ = ()
-
-
-# ################################ GLOBALS #####################################
+__requires__ = ()
 
 
 __all__ = (
     # fmt: off
-    "TreeWalker",
+    "Walker",
     # fmt: on
 )
 
@@ -53,15 +52,15 @@ class _StackEntry(NamedTuple):
 # ################################ WALKER ######################################
 
 
-class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
+class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
     # ################## FIELDS ############################
 
     basepath: Final[str]
 
-    _ignored_names: Set[str]
-    _ignored_prefixes: List[str]
-    _ignored_suffixes: List[str]
-    _ignore: Callable[[DirEntry[str]], bool] | None
+    symlinks: Final[bool]
+
+    _ignore: List[str]
+    _skiplist: List[str]
 
     scanpath: str
     _scaniter: Iterator[DirEntry[str]] | None
@@ -75,17 +74,16 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
         self,
         path: str,
         *,
-        ignored_names: Iterable[str] | None = None,
-        ignored_prefixes: Iterable[str] | None = None,
-        ignored_suffixes: Iterable[str] | None = None,
-        ignore: Callable[[DirEntry[str]], bool] | None = None,
+        ignore: Iterable[str] | None = None,
+        skip: Iterable[str] | None = None,
+        symlinks: bool = True,
     ) -> None:
         self.basepath = os.path.abspath(path)
 
-        self._ignored_names = set(ignored_names or ())
-        self._ignored_prefixes = list(ignored_prefixes or ())
-        self._ignored_suffixes = list(ignored_suffixes or ())
-        self._ignore = ignore
+        self.symlinks = symlinks
+
+        self._ignore = list(ignore or ())
+        self._skiplist = list(skip or ())
 
         self.scanpath = ""
         self._scaniter = None
@@ -95,7 +93,7 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
         self._dirqueue.append("")
 
-    # ################## ABSTRACT ##########################
+    # ################## BASECLASS #########################
 
     @abstractmethod
     def make_entry(self, entry: DirEntry[str]) -> TENTRY: ...
@@ -108,7 +106,7 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
     def __iter__(self) -> Self:
         return self
 
-    def __next__(self) -> TENTRY:  # noqa: C901
+    def __next__(self) -> TENTRY:
         while True:
             entry = None
 
@@ -125,36 +123,23 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
             assert entry is not None, (
                 f"Variable {'entry'!r} is unexpectedly unset."
                 f" ({self.scanpath!r})"
-                # <format-break>
             )
 
-            if entry.is_symlink():
+            if entry.name in self._skiplist:
+                continue
+            elif any(
+                fnmatch.fnmatchcase(entry.name, filter)
+                for filter in self._ignore
+            ):
+                continue
+
+            if entry.is_junction():
                 raise NotImplementedError(
-                    "Symbolic links are currently not supported."
+                    f"Junctions are currently not supported."
                     f" ({entry.path!r})"
-                    # <format-break>
                 )
 
-            if entry.name in self._ignored_names:
-                continue
-            elif any(
-                entry.name.startswith(prefix)
-                for prefix in self._ignored_prefixes
-            ):
-                continue
-            elif any(
-                entry.name.endswith(suffix)
-                for suffix in self._ignored_suffixes
-            ):
-                continue
-            elif (
-                self._ignore is not None
-                and self._ignore(entry)
-                # <format-break>
-            ):
-                continue
-
-            if entry.is_dir():
+            if entry.is_dir() and (not entry.is_symlink() or self.symlinks):
                 self._dirqueue.append(entry.name)
 
             break
@@ -163,7 +148,12 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
     def __next_dir__(self) -> bool:
         while self._dirqueue:
-            scanpath = self._dirqueue.pop(0)
+            _dirname = self._dirqueue.pop(0)
+
+            scanpath = os.path.join(self.scanpath, _dirname)
+
+            if _dirname in self._skiplist:
+                continue
 
             self._stack.append(
                 _StackEntry(
@@ -173,24 +163,23 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
                 )
             )
 
-            self.scanpath = os.path.join(self.scanpath, scanpath)
+            self.scanpath = scanpath
             self._scaniter = os.scandir(
                 os.path.join(
                     self.basepath,
-                    self.scanpath,
+                    scanpath,
                 )
             )
             self._dirqueue = list()
 
-            self.on_enter(self.scanpath)
+            self.on_enter(scanpath)
 
             return True
 
         if self._stack:
+            _stackentry = self._stack.pop()
 
             self.on_exit(self.scanpath)
-
-            _stackentry = self._stack.pop()
 
             self.scanpath = _stackentry.scanpath
             self._scaniter = _stackentry.scaniter
@@ -199,3 +188,28 @@ class TreeWalker(ABC, Generic[TENTRY], Iterator[TENTRY]):
             return False
 
         raise StopIteration()
+
+
+# ################################ GENERIC #####################################
+
+
+@dataclass(eq=False, frozen=True, slots=True)
+class _DirEntry:
+    entry: DirEntry[str]
+    name: str
+    path: str
+    rpath: str
+    type: Literal["dir", "file"]
+    symlink: bool
+
+
+class DirWalker(Walker[_DirEntry]):
+    def make_entry(self, entry: DirEntry[str]) -> _DirEntry:
+        return _DirEntry(
+            entry,
+            entry.name,
+            os.path.join(self.scanpath, entry.name),
+            entry.path,
+            ("file" if entry.is_file() else "dir"),
+            entry.is_symlink(),
+        )
