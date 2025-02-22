@@ -1,0 +1,4 @@
+{
+  "python.venv.requirements": ".config/requirements.lock",
+  "<placeholder>": null
+}
