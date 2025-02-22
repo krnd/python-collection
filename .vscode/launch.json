@@ -5,7 +5,18 @@
             "name": "python",
             "type": "debugpy",
             "request": "launch",
-            "program": "__main__.py",
+            "module": "source",
+            "console": "internalConsole",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
+        },
+        {
+            "name": "file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
             "console": "internalConsole",
             "justMyCode": false
         }
