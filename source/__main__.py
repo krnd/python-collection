@@ -1,0 +1,1 @@
+# pyright: reportWildcardImportFromLibrary=false
