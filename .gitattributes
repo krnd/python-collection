@@ -1,0 +1,88 @@
+########################################
+# Line Endings                         #
+########################################
+
+* text=auto
+
+# Windows
+*.{cmd,[Cc][Mm][Dd]} text eol=crlf
+*.{bat,[Bb][Aa][Tt]} text eol=crlf
+
+# Unix
+*.sh text eol=lf
+
+
+########################################
+# Binary Files                         #
+########################################
+
+# Archives
+*.7z  binary
+*.cab binary
+*.gz  binary
+*.rar binary
+*.tar binary
+*.zip binary
+
+# Binary
+*.bin binary
+*.hex binary
+
+# Audio
+*.aif  binary
+*.aiff binary
+*.mp3  binary
+*.ogg  binary
+*.wav  binary
+
+# Database
+*.mdb binary
+*.pdb binary
+
+# Documents
+*.doc  binary
+*.docx binary
+*.odb  binary
+*.odf  binary
+*.odg  binary
+*.odi  binary
+*.odp  binary
+*.ods  binary
+*.odt  binary
+*.pdf  binary
+*.ppt  binary
+*.pptx binary
+*.xls  binary
+*.xlsx binary
+
+# Fonts
+*.otf   binary
+*.ttf   binary
+*.woff  binary
+*.woff2 binary
+
+# Images
+*.bmp  binary
+*.gif  binary
+*.ico  binary
+*.jpeg binary
+*.jpg  binary
+*.png  binary
+*.ps   binary
+*.psd  binary
+*.svg  binary
+*.tif  binary
+*.tiff binary
+*.xcf  binary
+
+# Video
+*.avi  binary
+*.mov  binary
+*.mpeg binary
+
+# Windows
+*.dll binary
+*.exe binary
+
+# Python
+*.whl binary
