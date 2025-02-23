@@ -44,7 +44,7 @@ def init(
     container: str | None = None,
     *,
     package: str | None = None,
-    server: str | None = None,
+    server: str | bool | None = None,
 ) -> None:
     subpath = os.path.normpath(
         os.path.join(container, folder)
@@ -120,9 +120,18 @@ def init(
     # ################## SERVER ############################
     global __SERVER_APPDATA__
 
-    basepath = server or os.getenv("SERVERAPPDATA")
-    if basepath is not None:
+    basepath = (
+        server  # <format-newline>
+        if isinstance(server, str)
+        else os.getenv("SERVERAPPDATA")
+    )
+    if basepath is None and server is True:
+        raise EnvironmentError(
+            "Environment variable %SERVERAPPDATA% not found."
+            # <format-newline>
+        )
 
+    if basepath is not None:
         __SERVER_APPDATA__ = os.path.abspath(
             os.path.join(basepath, subpath)
             # <format-break>
