@@ -76,10 +76,11 @@ def init(
     global __USER_APPDATA__
 
     basepath = os.getenv("APPDATA")
-    assert basepath is not None, (
-        "Environment variable %APPDATA% not found."
-        # <format-newline>
-    )
+    if basepath is None:
+        raise EnvironmentError(
+            "Environment variable %APPDATA% not found."
+            # <format-newline>
+        )
 
     __USER_APPDATA__ = os.path.abspath(
         os.path.join(basepath, subpath)
@@ -90,10 +91,11 @@ def init(
     global __LOCAL_APPDATA__
 
     basepath = os.getenv("LOCALAPPDATA")
-    assert basepath is not None, (
-        "Environment variable %LOCALAPPDATA% not found."
-        # <format-newline>
-    )
+    if basepath is None:
+        raise EnvironmentError(
+            "Environment variable %LOCALAPPDATA% not found."
+            # <format-newline>
+        )
 
     __LOCAL_APPDATA__ = os.path.abspath(
         os.path.join(basepath, subpath)
@@ -104,10 +106,11 @@ def init(
     global __TEMP_APPDATA__
 
     basepath = os.getenv("TEMP")
-    assert basepath is not None, (
-        "Environment variable %TEMP% not found."
-        # <format-newline>
-    )
+    if basepath is None:
+        raise EnvironmentError(
+            "Environment variable %TEMP% not found."
+            # <format-newline>
+        )
 
     __TEMP_APPDATA__ = os.path.abspath(
         os.path.join(basepath, subpath)
