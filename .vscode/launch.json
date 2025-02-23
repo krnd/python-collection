@@ -13,6 +13,17 @@
             }
         },
         {
+            "name": "python (terminal)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "source",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
+        },
+        {
             "name": "file",
             "type": "debugpy",
             "request": "launch",
