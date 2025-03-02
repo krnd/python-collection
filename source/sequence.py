@@ -22,6 +22,9 @@ T = TypeVar("T")
 T0 = TypeVar("T0")
 
 
+# ################################ TYPES ######################################
+
+
 _SequenceCallable: TypeAlias = Callable[
     [Iterable[T]],
     Sequence[T],

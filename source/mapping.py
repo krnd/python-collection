@@ -15,7 +15,7 @@ __requires__ = ()
 __all__ = ()
 
 
-# ################################ TYPING ######################################
+# ################################ TYPES ######################################
 
 
 _MappingCallable: TypeAlias = Callable[
@@ -26,7 +26,7 @@ _MappingCallable: TypeAlias = Callable[
 _JoinCallable: TypeAlias = Callable[[str, str], str]
 
 
-# ################################ FINALS ######################################
+# ################################ COSTANTS ####################################
 
 
 DEFAULT_FLATTEN_JOIN: Final = "."

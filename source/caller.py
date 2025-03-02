@@ -38,7 +38,7 @@ class _FileLocation(NamedTuple):
     line: int
 
 
-# ################################ INTERFACE ###################################
+# ################################ FUNCTIONS ###################################
 
 
 def frameinfo(**fargs: Unpack[_fArgs]) -> FrameInfo:
