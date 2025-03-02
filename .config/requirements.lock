@@ -1,14 +1,19 @@
 attrs==25.1.0
+beautifulsoup4==4.13.3
 black==25.1.0
+certifi==2025.1.31
+charset-normalizer==3.4.1
 click==8.1.8
 cmd2==2.5.11
 colorama==0.4.6
 flake8==7.1.1
 flake8-bugbear==24.12.12
+idna==3.10
 iniconfig==2.0.0
 isort==6.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
+lxml==5.3.1
 mccabe==0.7.0
 mypy-extensions==1.0.0
 packaging==24.2
@@ -23,7 +28,11 @@ pyreadline3==3.5.4
 pytest==8.3.4
 pyyaml==6.0.2
 referencing==0.36.2
+requests==2.32.3
 rpds-py==0.22.3
+soupsieve==2.6
+typing-extensions==4.12.2
+urllib3==2.3.0
 wcwidth==0.2.13
 
 # The following packages are considered to be unsafe in a requirements file:

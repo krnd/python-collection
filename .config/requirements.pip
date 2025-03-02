@@ -22,12 +22,17 @@ pytest
 
 # ############ PROJECT #################
 
+# Screen-scraping library
+beautifulsoup4
 # cmd2 - quickly build feature-rich and user-friendly interactive command line
 # applications in Python
 cmd2
-
 # An implementation of JSON Schema validation for Python
 jsonschema
-
+# Powerful and Pythonic XML processing library combining libxml2/libxslt with
+# the ElementTree API.
+lxml
 # YAML parser and emitter for Python
 PyYAML
+# Python HTTP for Humans.
+requests
