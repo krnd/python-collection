@@ -1,40 +1,45 @@
 import builtins
 import typing
+from types import EllipsisType, NoneType
 from typing import Annotated
 from typing import Any
 from typing import Any as _Ignore
 from typing import (
     Final,
-    Literal,
+    Iterable,
     Mapping,
     Sequence,
+    Tuple,
     Type,
-    TypeAlias,
     TypeVar,
-    Union,
     overload,
 )
 
 
-# ################################ METADATA ####################################
+# ################################ PACKAGE #####################################
 
 
-__pkgname__ = "caststr"
+__sname__ = "caststr"
 __version__ = "1.0"
+__description__ = ...
 
-__dependencies__ = ()
-
-
-# ################################ GLOBALS #####################################
+__requires__ = ()
 
 
 __all__ = (
     # fmt: off
-    "NotResolved",
     "isnone", "isbool", "isfalse", "istrue",
     "resolve",
     # fmt: on
 )
+
+
+# ###################### UNSET #############################
+
+
+_UnsetType = type("_UnsetType", (), {})
+
+_UNSET = _UnsetType()
 
 
 # ################################ TYPING ######################################
@@ -43,36 +48,7 @@ __all__ = (
 T = TypeVar("T")
 
 
-# ################################ TYPES #######################################
-
-
-_BuiltinType: TypeAlias = Union[
-    None,
-    bool,
-    int,
-    float,
-    complex,
-    str,
-]
-
-_ResolvedType: TypeAlias = Union[
-    _BuiltinType,
-    typing.Tuple[_BuiltinType, ...],
-    typing.List[_BuiltinType],
-]
-
-
-# ###################### UNSET #############################
-
-
-class _UnsetType(object):
-    pass
-
-
-_UNSET: Final = _UnsetType()
-
-
-# ################################ CONSTANTS ###################################
+# ################################ COSTANTS ####################################
 
 
 NONE_MAPPED_VALUES: Final = ("none", "null", "invalid")
@@ -81,22 +57,17 @@ TRUE_MAPPED_VALUES: Final = ("true", "yes", "on", "enable", "enabled")
 
 INT_BASE_INDICATORS: Final = {"b": 2, "o": 8, "x": 16}
 
+SEQUENCE_DELIMITERS: Final = ("()", "[]")
 SEQUENCE_SEPARATOR: Final = ","
-SEQUENCE_NEST_MAPPING: Final = {
-    "(": ")",
-    "[": "]",
-    "{": "}",
-}
+
+MAPPING_DELIMITERS: Final = ("{}",)
+MAPPING_SEPARATOR: Final = ","
+MAPPING_DIVIDER: Final = ":"
+
+GROUPINGS: Final = {k: v for k, v in ("()", "[]", "{}", "''", '""')}
 
 
-# ################################ EXCEPTIONS ##################################
-
-
-class NotResolved(Exception):
-    pass
-
-
-# ################################ INTERFACE ###################################
+# ################################ FUNCTIONS ###################################
 
 
 def isnone(
@@ -159,11 +130,22 @@ def istrue(
     return s.lower() in TRUE_MAPPED_VALUES
 
 
+# ###################### RESOLVE ###########################
+
+
 @overload
 def resolve(
     s: str,
     /,
-) -> _ResolvedType: ...
+) -> Any: ...
+
+
+@overload
+def resolve(
+    s: str,
+    /,
+    type: None,
+) -> None: ...
 
 
 @overload
@@ -178,192 +160,309 @@ def resolve(
 def resolve(
     s: str,
     /,
-    type: Literal[None],
-) -> Literal[None]: ...
-
-
-@overload
-def resolve(
-    s: str,
-    /,
-    type: Annotated[_Ignore, "fallback"],
+    type: Any,
 ) -> Any: ...
 
 
 def resolve(
     s: str,
     /,
-    type: _Ignore = _UNSET,
+    type: Any = _UNSET,
 ) -> _Ignore:
-    if isinstance(type, _UnsetType):
-        return _resolve_detect(s)
-    elif type is Any:
-        return _resolve_detect(s)
+    return _resolve.call(s, type, _depth=0)
 
-    origin = typing.get_origin(type)
-    if origin is None:
-        value = _resolve_builtin(s, type)
-    else:
-        value = _resolve_nested(
+
+# ################################ INTERNALS ###################################
+
+
+class _resolve:
+
+    @staticmethod
+    def call(
+        s: str,
+        /,
+        type: _Ignore,
+        *,
+        _depth: int,
+    ) -> _Ignore:
+        if type is _UNSET:
+            return _resolve.auto(s, _depth=_depth)
+        elif type is Any:
+            return _resolve.auto(s, _depth=_depth)
+
+        origin = typing.get_origin(type)
+        if origin is None:
+            value = _resolve.primitive(s, type)
+        else:
+            value = _resolve.origin(s, origin, type, _depth=_depth)
+
+        return value
+
+    @staticmethod
+    def auto(  # noqa: C901
+        s: str,
+        /,
+        *,
+        _depth: int,
+    ) -> _Ignore:
+        if s.lower() in NONE_MAPPED_VALUES:
+            return None
+
+        if s.lower() in FALSE_MAPPED_VALUES:
+            return False
+        if s.lower() in TRUE_MAPPED_VALUES:
+            return True
+
+        intbase = INT_BASE_INDICATORS.get(s[1:2], 10)
+        try:
+            return int(s, intbase)
+        except ValueError:
+            pass
+
+        try:
+            return float(s)
+        except ValueError:
+            pass
+
+        try:
+            return complex(s)
+        except ValueError:
+            pass
+
+        try:
+            _mapping = _resolve.mapping(s)
+        except ValueError:
+            pass
+        else:
+            return dict(
+                (
+                    _resolve.auto(keystr, _depth=(_depth + 1)),
+                    _resolve.auto(valuestr, _depth=(_depth + 1)),
+                )
+                for keystr, valuestr in _mapping
+            )
+
+        try:
+            _sequence = _resolve.sequence(s, nodelim=(_depth == 0))
+        except ValueError:
+            pass
+        else:
+            return list(
+                _resolve.auto(itemstr, _depth=(_depth + 1))
+                for itemstr in _sequence  # <format-break>
+            )
+
+        return s
+
+    @staticmethod
+    def primitive(  # noqa: C901
+        s: str,
+        /,
+        type: Any,
+    ) -> _Ignore:
+        if type is None:
+            if s.lower() in NONE_MAPPED_VALUES:
+                return None
+            raise ValueError(f"invalid none: {s!r}")
+
+        elif type is str:
+            return str(s)
+
+        elif type is bool:
+            if s.lower() in FALSE_MAPPED_VALUES:
+                return False
+            elif s.lower() in TRUE_MAPPED_VALUES:
+                return True
+            raise ValueError(f"invalid bool: {s!r}")
+
+        elif type is int:
+            intbase = INT_BASE_INDICATORS.get(s[1:2], 10)
+            return int(s, intbase)
+
+        elif type is float:
+            return float(s)
+
+        elif type is complex:
+            return complex(s)
+
+        elif type is bytes:
+            return bytes(s, encoding="utf-8")
+
+        raise ValueError(f"invalid type: {type!r}")
+
+    @staticmethod
+    def origin(  # noqa: C901
+        s: str,
+        /,
+        origin: Any,
+        type: Any,
+        *,
+        _depth: int,
+    ) -> _Ignore:
+        if origin is typing.Annotated:
+            (anntype, *_) = typing.get_args(type)
+            return _resolve.call(s, anntype, _depth=(_depth + 1))
+
+        elif origin is typing.Union:
+            for itemtype in typing.get_args(type):
+                try:
+                    return _resolve.call(s, itemtype, _depth=(_depth + 1))
+                except ValueError:
+                    continue
+
+        elif issubclass(origin, typing.Tuple):
+            _itemtypes = typing.get_args(type)
+            if Ellipsis in _itemtypes:
+                (itemtype, _) = _itemtypes
+                return tuple(
+                    _resolve.call(itemstr, itemtype, _depth=(_depth + 1))
+                    for itemstr in _resolve.sequence(s, nodelim=(_depth == 0))
+                )
+            else:
+                return tuple(
+                    _resolve.call(itemstr, itemtype, _depth=(_depth + 1))
+                    for (itemstr, itemtype) in builtins.zip(
+                        _resolve.sequence(s, nodelim=(_depth == 0)),
+                        _itemtypes,
+                        strict=True,
+                    )
+                )
+
+        elif issubclass(origin, typing.List):
+            (itemtype,) = typing.get_args(type)
+            return list(
+                _resolve.call(itemstr, itemtype, _depth=(_depth + 1))
+                for itemstr in _resolve.sequence(s, nodelim=(_depth == 0))
+            )
+
+        elif issubclass(origin, typing.Dict):
+            (keytype, valuetype) = typing.get_args(type)
+            return dict(
+                (
+                    _resolve.call(keystr, keytype, _depth=(_depth + 1)),
+                    _resolve.call(valuestr, valuetype, _depth=(_depth + 1)),
+                )
+                for keystr, valuestr in _resolve.mapping(s)
+            )
+
+        raise ValueError(s, origin, type)
+
+    @staticmethod
+    def sequence(
+        s: str,
+        /,
+        *,
+        nodelim: bool,
+    ) -> Iterable[str]:
+        sfirst, slast = s[0], s[-1]
+        for ldelim, rdelim in SEQUENCE_DELIMITERS:
+            if sfirst == ldelim and slast == rdelim:
+                unpack = 1
+                break
+        else:
+            if nodelim and slast == SEQUENCE_SEPARATOR:
+                unpack = -1
+            elif nodelim and SEQUENCE_SEPARATOR in s:
+                unpack = 0
+            else:
+                raise ValueError(f"invalid sequence: {s!r}")
+        return _split(
             s,
-            origin,
-            type,
+            SEQUENCE_SEPARATOR,
+            grouping=GROUPINGS,
+            unpack=unpack,
         )
 
-    return value
+    @staticmethod
+    def mapping(
+        s: str,
+        /,
+    ) -> Iterable[Tuple[str, str]]:
+        sfirst, slast = s[0], s[-1]
+        for ldelim, rdelim in MAPPING_DELIMITERS:
+            if sfirst == ldelim and slast == rdelim:
+                unpack = 1
+                break
+        else:
+            raise ValueError(f"invalid mapping: {s!r}")
+        return (
+            _partition(itemstr, MAPPING_DIVIDER)
+            for itemstr in _split(
+                s,
+                MAPPING_SEPARATOR,
+                grouping=GROUPINGS,
+                unpack=unpack,
+            )
+        )
 
 
 # ################################ HELPERS #####################################
 
 
-def _resolve_detect(
+def _split(
     s: str,
     /,
-) -> _ResolvedType:
-    if s.lower() in NONE_MAPPED_VALUES:
-        return None
+    sep: Annotated[str, "char"],
+    *,
+    grouping: Mapping[str, str],
+    unpack: int,
+) -> Iterable[str]:
+    stack, start = "", (0 if unpack < 0 else unpack)
+    for index, c in enumerate(s):
+        if index < start:
+            continue
+        elif stack and c == stack[-1]:
+            stack = stack[:-1]
+        elif c in grouping:
+            stack += grouping[c]
+        elif stack:
+            pass
+        elif c == sep:
+            yield s[start:index]
+            start = index + 1
+    if stack:
+        raise ValueError(f"invalid split: {s!r}")
+    if unpack < 0:
+        if _slast := s[start:unpack]:
+            yield _slast
+    else:
+        yield s[start : (-unpack or None)]
 
-    if s.lower() in FALSE_MAPPED_VALUES:
-        return False
-    if s.lower() in TRUE_MAPPED_VALUES:
-        return True
 
-    intbase = INT_BASE_INDICATORS.get(s[1:2], 10)
-    try:
-        return int(s, intbase)
-    except ValueError:
-        pass
-
-    try:
-        return float(s)
-    except ValueError:
-        pass
-
-    try:
-        return complex(s)
-    except ValueError:
-        pass
-
-    return str(s)
-
-
-def _resolve_builtin(
+def _partition(
     s: str,
     /,
-    type: Union[
-        Type[Any],
-        Literal[None],
-    ],
-) -> _ResolvedType:
-    if type is None:
-        if s.lower() in NONE_MAPPED_VALUES:
-            return None
-        raise ValueError(f"invalid literal for none: {s!r}")
-
-    elif type is str:
-        return str(s)
-
-    elif type is bool:
-        if s.lower() in FALSE_MAPPED_VALUES:
-            return False
-        elif s.lower() in TRUE_MAPPED_VALUES:
-            return True
-        raise ValueError(f"invalid literal for bool: {s!r}")
-
-    elif type is int:
-        intbase = INT_BASE_INDICATORS.get(s[1:2], 10)
-        return int(s, intbase)
-
-    elif type is float:
-        return float(s)
-
-    elif type is complex:
-        return complex(s)
-
-    raise ValueError(f"invalid type hint: {type!r}")
+    sep: Annotated[str, "char"],
+) -> Tuple[str, str]:
+    sleft, is_split, sright = s.partition(sep)
+    if is_split:
+        return sleft, sright
+    raise ValueError(f"invalid partition: {s!r}")
 
 
-def _resolve_nested(
-    s: str,
-    /,
-    origin: Union[
-        Type[Any],
-        Annotated[Any, typing.Annotated],
-    ],
-    type: Union[
-        Type[Any],
-        Literal[None],
-    ],
-) -> _ResolvedType:
-    if origin is typing.Annotated:
-        (anntype, *_) = typing.get_args(type)
-        return resolve(s, anntype)
+# ################################ DEBUG #######################################
 
-    elif origin is typing.Union:
-        for itemtype in typing.get_args(type):
-            try:
-                return resolve(s, itemtype)
-            except ValueError:
-                continue
 
-    elif issubclass(origin, typing.List):
-        (itemtype,) = typing.get_args(type)
-        return list(
-            resolve(itemstr, itemtype)
-            for itemstr in _split_sequence(s)
-            # <format-newline>
+def print(obj: Any, /) -> None:
+    def _print(obj: _Ignore, /, *, end: str = "\n") -> None:
+        typename = (
+            str.removesuffix(type(obj).__name__, "Type")
+            if isinstance(obj, (NoneType, EllipsisType))
+            else type(obj).__name__
+        )
+        builtins.print(
+            f"<{typename}> {obj!r}",
+            end=end,
         )
 
-    elif issubclass(origin, typing.Tuple):
-        _hint = typing.get_args(type)
-        if Ellipsis in _hint:
-            (itemtype, _) = _hint
-            return tuple(
-                resolve(itemstr, itemtype)
-                for itemstr in _split_sequence(s)
-                # <format-newline>
-            )
-        else:
-            return tuple(
-                resolve(itemstr, itemtype)
-                for (itemstr, itemtype) in builtins.zip(
-                    _split_sequence(s),
-                    _hint,
-                )
-                # <format-newline>
-            )
-
-    raise NotResolved()
-
-
-def _split_sequence(
-    s: str,
-    /,
-    *,
-    sep: str = SEQUENCE_SEPARATOR,
-    nest: Mapping[str, str] = SEQUENCE_NEST_MAPPING,
-) -> Sequence[str]:
-    items = list[str]()
-
-    value = ""
-    stack = ""
-    for c in s:
-        if c in nest:
-            stack += nest[c]
-
-        elif stack:
-            if c == stack[-1]:
-                stack = stack[:-1]
-
-        elif c == sep:
-            items.append(value.strip())
-
-            value = ""
-            continue
-
-        value += c
-
-    if value:
-        items.append(value.strip())
-
-    return items
+    if isinstance(obj, (str, bytes)):
+        _print(obj)
+    elif isinstance(obj, Mapping):
+        for key, value in obj.items():
+            _print(key, end="\n :: ")
+            _print(value)
+    elif isinstance(obj, Sequence):
+        for item in obj:
+            _print(item)
+    else:
+        _print(obj)
