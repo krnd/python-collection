@@ -17,6 +17,12 @@ __all__ = (
     # fmt: off
     # ######## BUILTINS ###########
     "typename", "fullyqualifiedtypename",
+    # ######## LOCALS #############
+    "haslocal", "getlocal",
+    "setlocal", "dellocal",
+    # ######## GLOBALS ############
+    "hasglobal", "getglobal",
+    "setglobal", "delglobal",
     # ######## OBJATTR ############
     "hasobjattr", "getobjattr",
     "setobjattr", "delobjattr",
@@ -144,6 +150,60 @@ def fullyqualifiedtypename(obj: Any, /) -> str:
     module = getattr(objtype, "__module__")
     qualname = getattr(objtype, "__qualname__", None)
     return f"{module}.{qualname or name}"
+
+
+# ###################### LOCALS ###########################
+
+
+def haslocal(name: str, /) -> bool:
+    _locals = locals()
+    return name in _locals
+
+
+def getlocal(name: str, default: Any = _UNSET, /) -> Any:
+    _locals = locals()
+    if name in _locals:
+        return _locals[name]
+    if default is not _UNSET:
+        return default
+    raise NameError(f"name {name!r} is not defined")
+
+
+def setlocal(name: str, value: Any, /) -> None:
+    _locals = locals()
+    _locals[name] = value
+
+
+def dellocal(name: str, /) -> None:
+    _locals = locals()
+    del _locals[name]
+
+
+# ###################### GLOBALS ###########################
+
+
+def hasglobal(name: str, /) -> bool:
+    _globals = globals()
+    return name in _globals
+
+
+def getglobal(name: str, default: Any = _UNSET, /) -> Any:
+    _globals = globals()
+    if name in _globals:
+        return _globals[name]
+    if default is not _UNSET:
+        return default
+    raise NameError(f"name {name!r} is not defined")
+
+
+def setglobal(name: str, value: Any, /) -> None:
+    _globals = globals()
+    _globals[name] = value
+
+
+def delglobal(name: str, /) -> None:
+    _globals = globals()
+    del _globals[name]
 
 
 # ###################### OBJATTR ###########################
