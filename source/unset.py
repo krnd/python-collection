@@ -1,11 +1,11 @@
-from typing import Any, Final, TypeAlias, TypeIs
+from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 
 
 # ################################ PACKAGE #####################################
 
 
 __sname__ = "unset"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ()
@@ -13,21 +13,18 @@ __requires__ = ()
 
 __all__ = (
     # fmt: off
-    "UnsetType",
-    "Unset",
+    "UnsetType", "UNSET", "Unset",
+    "isunset",
     # fmt: on
 )
 
 
-# ###################### USAGE #############################
-"""
+# ################################ TYPING ######################################
 
-    from unset import Unset, isunset
 
-    def function(arg: Type | Unset = ~Unset):
-        arg = arg if not isunset(arg) else VALUE
+T = TypeVar("T")
 
-"""
+TONCE: TypeAlias = Any
 
 
 # ################################ UNSET #######################################
@@ -36,24 +33,41 @@ __all__ = (
 class _UnsetType(type):
 
     def __invert__(self) -> "UnsetType":
+        """Returns the unset value."""
+        global UNSET
         return UNSET
-
-    @staticmethod
-    def is_(obj: Any, /) -> TypeIs["UnsetType"]:
-        return obj is UNSET
 
 
 class UnsetType(object, metaclass=_UnsetType):
+    """Type of the unset value."""
 
     pass
 
 
 UNSET: Final = UnsetType()
+"""Value to use if unset."""
 
 
-# ###################### ALIASES ###########################
+# ###################### CONVENIENCE #######################
 
 
 Unset: TypeAlias = UnsetType
+"""
+The `Unset` attribute is a convencience alias to simplify the usage of the
+`UnsetType` and `UNSET` attributes.
 
-isunset: Final = UnsetType.is_
+It can be used as follows:
+```
+def function(arg: Type | Unset = ~Unset):
+    arg = arg if not isunset(arg) else VALUE
+    arg = on_unset(arg, VALUE)
+```
+"""
+
+
+# ################################ FUNCTIONS ###################################
+
+
+def isunset(obj: Any, /) -> TypeIs[UnsetType]:
+    """Returns true if the object is unset."""
+    return obj is UNSET
