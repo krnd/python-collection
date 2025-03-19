@@ -5,7 +5,7 @@ from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 
 
 __sname__ = "unset"
-__version__ = "1.1"
+__version__ = "1.2"
 __description__ = ...
 
 __requires__ = ()
@@ -14,7 +14,7 @@ __requires__ = ()
 __all__ = (
     # fmt: off
     "UnsetType", "UNSET", "Unset",
-    "isunset",
+    "isunset", "on_unset",
     # fmt: on
 )
 
@@ -71,3 +71,9 @@ def function(arg: Type | Unset = ~Unset):
 def isunset(obj: Any, /) -> TypeIs[UnsetType]:
     """Returns true if the object is unset."""
     return obj is UNSET
+
+
+def on_unset(obj: T | Unset, value: TONCE, /) -> T | TONCE:
+    """Returns either the object itself or the specified value if the object is
+    unset."""
+    return value if obj is UNSET else obj
