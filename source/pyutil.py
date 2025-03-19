@@ -7,7 +7,7 @@ from typing import Annotated, Any, Callable, Literal, Tuple, Union, overload
 
 
 __sname__ = "pyutil"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ()
@@ -15,18 +15,18 @@ __requires__ = ()
 
 __all__ = (
     # fmt: off
-    # ######## BUILTINS ###########
-    "typename", "fullyqualifiedtypename",
-    # ######## LOCALS #############
+    # ########### BUILTINS #############
+    "typename",
+    # ########### LOCALS ###############
     "haslocal", "getlocal",
     "setlocal", "dellocal",
-    # ######## GLOBALS ############
+    # ########### GLOBALS ##############
     "hasglobal", "getglobal",
     "setglobal", "delglobal",
-    # ######## OBJATTR ############
+    # ########### OBJATTR ##############
     "hasobjattr", "getobjattr",
     "setobjattr", "delobjattr",
-    # ######## DUNDER #############
+    # ########### DUNDER ###############
     "dunder", "dunderlizer",
     "hasdunder", "getdunder",
     "setdunder", "deldunder",
@@ -131,25 +131,19 @@ def resolve(
 # ################################ BUILTINS ####################################
 
 
-def typename(obj: Any, /) -> str:
+def typename(obj: Any, /, *, qual: bool = False) -> str:
     objtype = (
         obj  # <format-break>
         if isinstance(obj, builtins.type)
         else builtins.type(obj)
     )
-    return getattr(objtype, "__name__")
-
-
-def fullyqualifiedtypename(obj: Any, /) -> str:
-    objtype = (
-        obj  # <format-break>
-        if isinstance(obj, builtins.type)
-        else builtins.type(obj)
-    )
-    name = getattr(objtype, "__name__")
-    module = getattr(objtype, "__module__")
-    qualname = getattr(objtype, "__qualname__", None)
-    return f"{module}.{qualname or name}"
+    if qual:
+        name = getattr(objtype, "__name__")
+        module = getattr(objtype, "__module__")
+        qualname = getattr(objtype, "__qualname__", None)
+        return f"{module}.{qualname or name}"
+    else:
+        return getattr(objtype, "__name__")
 
 
 # ###################### LOCALS ###########################
