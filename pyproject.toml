@@ -3,7 +3,7 @@ reportMissingTypeStubs = false
 extraPaths = ["source"]
 
 [tool.black]
-line-length = 79
+line-length = 80
 
 [tool.isort]
 profile = "black"
