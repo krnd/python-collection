@@ -24,6 +24,8 @@ pytest
 
 # Screen-scraping library
 beautifulsoup4
+# Composable command line interface toolkit
+click
 # cmd2 - quickly build feature-rich and user-friendly interactive command line
 # applications in Python
 cmd2
