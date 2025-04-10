@@ -6,8 +6,8 @@ import click
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "click_auto_group"
-__version__ = "1.1"
+__sname__ = "click_autogroup"
+__version__ = "1.2"
 __description__ = ...
 
 __requires__ = ("click",)
