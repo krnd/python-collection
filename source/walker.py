@@ -4,6 +4,7 @@ import os.path
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Final,
     Generic,
     Iterable,
@@ -168,8 +169,10 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
     @abstractmethod
     def make_entry(self, entry: os.DirEntry[str], upath: str) -> TENTRY: ...
 
-    def on_enter(self, path: str) -> None: ...
-    def on_exit(self, path: str) -> None: ...
+    if TYPE_CHECKING:
+
+        def on_enter(self, path: str) -> None: ...
+        def on_exit(self, path: str) -> None: ...
 
     # ################## ITERATOR ##########################
 
@@ -274,14 +277,16 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
             )
             self._dirqueue = list()
 
-            self.on_enter(scanpath)
+            if hasattr(self, "on_enter"):
+                self.on_enter(scanpath)
 
             return True
 
         if self._stack:
             _stackentry = self._stack.pop()
 
-            self.on_exit(self._scanpath)
+            if hasattr(self, "on_exit"):
+                self.on_exit(self._scanpath)
 
             self._scanpath = _stackentry.scanpath
             self._scaniter = _stackentry.scaniter
@@ -318,13 +323,11 @@ class DirEntry:
     """Absolute path of the entry. (unix-style separator)"""
 
     def is_dir(self) -> bool:
-        """Returns whether the entry is a directory or a symbolic link pointing
-        to a directory."""
+        """Returns whether the entry is a directory or a symbolic link pointing to a directory."""
         return self._entry.is_dir()
 
     def is_file(self) -> bool:
-        """Returns whether the entry is a file or a symbolic link pointing to a
-        file."""
+        """Returns whether the entry is a file or a symbolic link pointing to a file."""
         return self._entry.is_file()
 
     def is_symlink(self) -> bool:
