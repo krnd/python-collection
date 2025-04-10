@@ -85,7 +85,7 @@ builtins =
 disable-noqa = False
 
 # Set the maximum length that any line (with some exceptions) may be.
-max-line-length = 79
+max-line-length = 80
 
 # Set the maximum allowed McCabe complexity value for a block of code.
 max-complexity = 10
@@ -127,10 +127,11 @@ ignore =
     # - [E704] multiple statements on one line (def)
     #   (conflicts with black)
     E701, E704,
+    # - [E731] do not assign a lambda expression, use a def
+    E731,
     # - [W503] line break before binary operator
     #   (conflicts with black)
-    # - [W505] doc line too long
-    W503, W505,
+    W503,
     # - [B902] Invalid first argument used for method.
     #   (conflicts with pylance:reportSelfClsParameterName)
     B009, B010,
@@ -139,11 +140,9 @@ ignore =
     # - [B010] Do not call `setattr(x, 'attr')`, instead use normal property
     #   access: `x.attr = val`.
     B902,
-    # - [B907]  Consider replacing `f"'{foo}'"` with `f"{foo!r}"` which is both
-    #   easier to read and will escape quotes inside foo if that would appear.
-    # B907,
     # - [B950] Line too long.
-    # B950,
+    #   (guaranteed with black)
+    B950,
 
 # Specify a list of codes to add to the list of ignored ones.
 # extend-ignore =
@@ -157,10 +156,11 @@ per-file-ignores =
     # - [F401] `module` imported but unused
     # - [F403] 'from `module` import *' used; unable to
     #   detect undefined names
+    # - [F405] `name` may be undefined, or defined from star
+    #   imports: `module`
     *.pyi:E301,E302,E305
-    __init__.py:F401,F403
-    __main__.py:F401,F403
-    schema.py:B950
+    __init__.py:F401,F403,F405
+    __main__.py:F401,F403,F405
 
 ################### Docstring ##############################
 
@@ -168,4 +168,4 @@ per-file-ignores =
 doctests = True
 
 # Set the maximum length that a comment or docstring line may be.
-max-doc-length = 79
+max-doc-length = 100
