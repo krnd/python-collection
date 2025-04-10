@@ -34,6 +34,8 @@ jsonschema
 # Powerful and Pythonic XML processing library combining libxml2/libxslt with
 # the ElementTree API.
 lxml
+# Python Serial Port Extension
+pyserial
 # YAML parser and emitter for Python
 PyYAML
 # Python HTTP for Humans.
