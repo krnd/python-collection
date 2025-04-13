@@ -1,7 +1,16 @@
 import json
 from configparser import BasicInterpolation, ConfigParser
 from dataclasses import dataclass
-from typing import Any, Final, Generic, Mapping, Type, TypedDict, TypeVar
+from typing import (
+    Any,
+    Final,
+    Generic,
+    Mapping,
+    Type,
+    TypedDict,
+    TypeVar,
+    overload,
+)
 
 import jsonschema
 
@@ -10,7 +19,7 @@ import jsonschema
 
 
 __sname__ = "fini"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ("jsonschema",)
@@ -93,17 +102,40 @@ def schema(
     return schema
 
 
+@overload
+def load(
+    path: str,
+    /,
+    schema: Type[TSCHEMA],
+) -> TSCHEMA: ...
+
+
+@overload
 def load(
     path: str,
     /,
     schema: IniSchema[TSCHEMA, TPARSER],
     *,
+    validate: bool = ...,
+) -> TSCHEMA: ...
+
+
+def load(
+    path: str,
+    /,
+    schema: IniSchema[TSCHEMA, TPARSER] | Type[TSCHEMA],
+    *,
     validate: bool = True,
 ) -> TSCHEMA:
     data: TSCHEMA
 
-    parser_type = schema.parser or DEFAULT_PARSER_TYPE
-    parser_args = schema.args or DEFAULT_PARSER_ARGS
+    if isinstance(schema, IniSchema):
+        parser_type = schema.parser or DEFAULT_PARSER_TYPE
+        parser_args = schema.args or DEFAULT_PARSER_ARGS
+    else:
+        parser_type = DEFAULT_PARSER_TYPE
+        parser_args = DEFAULT_PARSER_ARGS
+
     parser = parser_type(**parser_args)
 
     with open(path, "r", encoding="utf-8") as file:
@@ -111,32 +143,55 @@ def load(
 
     data = _parserdict(parser)  # type: ignore
 
-    if validate:
+    if validate and isinstance(schema, IniSchema):
         jsonschema.validate(data, schema.decl)
 
     return data
 
 
+@overload
+def loadp(
+    path: str,
+    /,
+    schema: Type[TSCHEMA],
+) -> ConfigParser: ...
+
+
+@overload
 def loadp(
     path: str,
     /,
     schema: IniSchema[TSCHEMA, TPARSER],
     *,
+    validate: bool = ...,
+) -> TPARSER: ...
+
+
+def loadp(
+    path: str,
+    /,
+    schema: IniSchema[TSCHEMA, TPARSER] | Type[TSCHEMA],
+    *,
     validate: bool = True,
 ) -> TPARSER:
-    vdata: TSCHEMA
+    data: TSCHEMA
 
-    parser_type = schema.parser or DEFAULT_PARSER_TYPE
-    parser_args = schema.args or DEFAULT_PARSER_ARGS
+    if isinstance(schema, IniSchema):
+        parser_type = schema.parser or DEFAULT_PARSER_TYPE
+        parser_args = schema.args or DEFAULT_PARSER_ARGS
+    else:
+        parser_type = DEFAULT_PARSER_TYPE
+        parser_args = DEFAULT_PARSER_ARGS
+
     parser = parser_type(**parser_args)
 
     with open(path, "r", encoding="utf-8") as file:
         parser.read_file(file)
 
-    if validate:
-        vdata = _parserdict(parser)  # type: ignore
+    if validate and isinstance(schema, IniSchema):
+        data = _parserdict(parser)  # type: ignore
 
-        jsonschema.validate(vdata, schema.decl)
+        jsonschema.validate(data, schema.decl)
 
     return parser  # type: ignore
 
