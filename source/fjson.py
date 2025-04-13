@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Generic, Type, TypedDict, TypeVar
+from typing import Generic, Type, TypedDict, TypeVar, overload
 
 import jsonschema
 
@@ -9,7 +9,7 @@ import jsonschema
 
 
 __sname__ = "fjson"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ("jsonschema",)
@@ -59,10 +59,28 @@ def schema(
     return schema
 
 
+@overload
+def load(
+    path: str,
+    /,
+    schema: Type[TSCHEMA],
+) -> TSCHEMA: ...
+
+
+@overload
 def load(
     path: str,
     /,
     schema: JsonSchema[TSCHEMA],
+    *,
+    validate: bool = ...,
+) -> TSCHEMA: ...
+
+
+def load(
+    path: str,
+    /,
+    schema: JsonSchema[TSCHEMA] | Type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TSCHEMA:
@@ -73,7 +91,7 @@ def load(
 
     data = json.loads(s)  # type: ignore
 
-    if validate:
+    if validate and isinstance(schema, JsonSchema):
         jsonschema.validate(data, schema.decl)
 
     return data
