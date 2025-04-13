@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Generic, Type, TypedDict, TypeVar
+from typing import Generic, Type, TypedDict, TypeVar, overload
 
 import jsonschema
 import yaml
@@ -10,7 +10,7 @@ import yaml
 
 
 __sname__ = "fyaml"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ("jsonschema", "yaml")
@@ -60,10 +60,28 @@ def schema(
     return schema
 
 
+@overload
+def load(
+    path: str,
+    /,
+    schema: Type[TSCHEMA],
+) -> TSCHEMA: ...
+
+
+@overload
 def load(
     path: str,
     /,
     schema: YamlSchema[TSCHEMA],
+    *,
+    validate: bool = ...,
+) -> TSCHEMA: ...
+
+
+def load(
+    path: str,
+    /,
+    schema: YamlSchema[TSCHEMA] | Type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TSCHEMA:
@@ -74,7 +92,7 @@ def load(
 
     data = yaml.load(s)  # type: ignore
 
-    if validate:
+    if validate and isinstance(schema, YamlSchema):
         jsonschema.validate(data, schema.decl)
 
     return data
