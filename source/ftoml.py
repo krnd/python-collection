@@ -1,7 +1,7 @@
 import json
 import tomllib
 from dataclasses import dataclass
-from typing import Generic, Type, TypedDict, TypeVar
+from typing import Generic, Type, TypedDict, TypeVar, overload
 
 import jsonschema
 
@@ -10,7 +10,7 @@ import jsonschema
 
 
 __sname__ = "ftoml"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ("jsonschema",)
@@ -60,10 +60,28 @@ def schema(
     return schema
 
 
+@overload
+def load(
+    path: str,
+    /,
+    schema: Type[TSCHEMA],
+) -> TSCHEMA: ...
+
+
+@overload
 def load(
     path: str,
     /,
     schema: TomlSchema[TSCHEMA],
+    *,
+    validate: bool = ...,
+) -> TSCHEMA: ...
+
+
+def load(
+    path: str,
+    /,
+    schema: TomlSchema[TSCHEMA] | Type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TSCHEMA:
@@ -74,7 +92,7 @@ def load(
 
     data = tomllib.loads(s)  # type: ignore
 
-    if validate:
+    if validate and isinstance(schema, TomlSchema):
         jsonschema.validate(data, schema.decl)
 
     return data
