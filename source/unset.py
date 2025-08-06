@@ -5,7 +5,7 @@ from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 
 
 __sname__ = "unset"
-__version__ = "1.2"
+__version__ = "1.3"
 __description__ = ...
 
 __requires__ = ()
@@ -53,7 +53,7 @@ UNSET: Final = UnsetType()
 
 Unset: TypeAlias = UnsetType
 """
-The `Unset` attribute is a convencience alias to simplify the usage of the
+The `Unset` attribute is a convenience alias to simplify the usage of the
 `UnsetType` and `UNSET` attributes.
 
 It can be used as follows:
