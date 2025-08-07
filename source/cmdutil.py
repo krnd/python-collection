@@ -11,7 +11,7 @@ import cmd2.ansi as _ansi
 
 
 __sname__ = "cmdutil"
-__version__ = "1.0"
+__version__ = "1.1"
 __description__ = ...
 
 __requires__ = ()
@@ -39,6 +39,7 @@ ALL_COMMANDS: Final = (
     "shell",
     "shortcut",
 )
+"""Collection of all built-in commands."""
 
 
 # ################################ FUNCTIONS ###################################
@@ -56,6 +57,28 @@ def setup(  # noqa: C901
     ],
     history: bool | None = None,
 ) -> None:
+    """
+    Setup a command interpreter.
+
+    :param "base":
+        Whether to exclude the advanced commands.
+        (commands: alias, macro, shortcut)
+    :param "file":
+        Whether to include all file manipulation commands.
+        (commands: edit)
+    :param "shell":
+        Whether to incldude all shell-related commands.
+        (commands: shell)
+    :param "python":
+        Whether to include all python-related commands.
+        (commands: py, run_pyscript)
+    :param "scripts":
+        Whether to include all script-related commands.
+        (commands: run_script, run_pyscript)
+    :param history:
+        Whether to include or remove the history command.
+
+    """
     commands = {
         "help",
         "history",
@@ -104,6 +127,14 @@ def patch(
         # <format-break>
     ],
 ) -> None:
+    """
+    Applies a set of patches to a command interpreter.
+
+    :param "pexcept":
+        Slightly modifies the `pexcept` function to improve error reporting and supress the
+        superfluous warning text.
+
+    """
     if "pexcept" in patches:
         cmd.pexcept = types.MethodType(_cmd_pexcept, cmd)
 
@@ -113,6 +144,15 @@ def debug(
     /,
     value: bool = True,
 ) -> None:
+    """
+    Sets a the debug configuration item on a command interpreter.
+
+    :param cmd:
+        Instance of the command interpreter.
+    :param value:
+        New value of the debug configuration item.
+
+    """
     if not hasattr(cmd, "echo"):
         raise RuntimeError(
             f"The {'debug'!r} utility function must be called after the "
@@ -128,8 +168,8 @@ def debug(
 def configure(
     cmd: _cmd.Cmd,
     /,
-    name: Literal["prompt"],
-    value: str,
+    name: Literal["debug"],
+    value: None,
 ) -> None: ...
 
 
@@ -137,8 +177,8 @@ def configure(
 def configure(
     cmd: _cmd.Cmd,
     /,
-    name: Literal[""],
-    value: None,
+    name: Literal["prompt"],
+    value: str,
 ) -> None: ...
 
 
@@ -148,13 +188,26 @@ def configure(
     name: str,
     value: Any,
 ) -> None:
+    """
+    Sets a configuration item on a command interpreter.
+
+    :param cmd:
+        Instance of the command interpreter.
+    :param name:
+        Name of the configuration item to set.
+    :param value:
+        New value of the configuration item.
+
+    """
     if not hasattr(cmd, "echo"):
         raise RuntimeError(
             f"The {'configure'!r} utility function must be called after the "
             "initialization of the command interpreter."
         )
+    elif name == "debug":
+        cmd.debug = bool(value)
     elif name == "prompt":
-        cmd.prompt = value
+        cmd.prompt = str(value)
     else:
         raise ValueError(
             f"The configuration item {name!r} does not exists or is not "
@@ -166,10 +219,30 @@ def configure(
 
 
 def exists(cmd: _cmd.Cmd, /, command: str) -> bool:
+    """
+    Returns whether a command exists.
+
+    :param cmd:
+        Instance of the command interpreter.
+    :param command:
+        Name of the command to look for.
+
+    """
     return getattr(cmd, f"do_{command}", None) is not None
 
 
 def hide(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
+    """
+    Hides a command.
+
+    :param cmd:
+        Instance of the command interpreter.
+    :param command:
+        Name of the command to hide.
+    :param exist:
+        Whether the command must exist.
+
+    """
     if getattr(cmd, f"do_{command}", None) is None:
         if exist:
             raise AttributeError(
@@ -187,6 +260,17 @@ def hide(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
 
 
 def remove(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
+    """
+    Removes a command.
+
+    :param cmd:
+        Instance of the command interpreter.
+    :param command:
+        Name of the command to remove.
+    :param exist:
+        Whether the command must exist.
+
+    """
     if getattr(cmd, f"do_{command}", None) is None:
         if exist:
             raise AttributeError(
@@ -227,9 +311,46 @@ if TYPE_CHECKING:
         conflict_handler: str = "error",
         add_help: bool = True,
         allow_abbrev: bool = True,
+        exit_on_error: bool = True,
         *,
         ap_completer_type: Optional[Type["ArgparseCompleter"]] = None,
-    ) -> Generator[_cmd.Cmd2ArgumentParser, None, None]: ...
+    ) -> Generator[_cmd.Cmd2ArgumentParser, None, None]:
+        """
+        Returns a new argument parser as context object.
+
+        :param prog: (cmd)
+            The name of the program (default: ``os.path.basename(sys.argv[0])``)
+        :param usage: (cmd)
+            A usage message (default: auto-generated from arguments)
+        :param description: (cmd)
+            A description of what the program does
+        :param epilog: (cmd)
+            Text following the argument descriptions
+        :param parents: (cmd)
+            Parsers whose arguments should be copied into this one
+        :param formatter_class: (cmd)
+            HelpFormatter class for printing help messages
+        :param prefix_chars: (cmd)
+            Characters that prefix optional arguments
+        :param fromfile_prefix_chars: (cmd)
+            Characters that prefix files containing additional arguments
+        :param argument_default: (cmd)
+            The default value for all arguments
+        :param conflict_handler: (cmd)
+            String indicating how to handle conflicts
+        :param add_help: (cmd)
+            Add a -h/-help option
+        :param allow_abbrev: (cmd)
+            Allow long options to be abbreviated unambiguously
+        :param exit_on_error: (cmd)
+            Determines whether or not ArgumentParser exits with error info when an error occurs
+        :param ap_completer_type: (cmd2)
+            optional parameter which specifies a subclass of ArgparseCompleter for custom tab
+            completion behavior on this parser. If this is None or not present, then cmd2 will use
+            argparse_completer.DEFAULT_AP_COMPLETER when tab completing this parser's arguments
+
+        """
+        ...
 
 else:
 
@@ -251,6 +372,8 @@ def _cmd_pexcept(
     end: str = "\n",
     apply_style: bool = True,
 ) -> None:
+    # Slightly modified variant of 'cmd2.Cmd.pexcept'.
+
     if self.debug and sys.exc_info() != (None, None, None):
         import traceback
 
