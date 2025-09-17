@@ -5,7 +5,7 @@ from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 
 
 __sname__ = "unset"
-__version__ = "1.3"
+__version__ = "1.4"
 __description__ = ...
 
 __requires__ = ()
@@ -59,6 +59,20 @@ The `Unset` attribute is a convenience alias to simplify the usage of the
 It can be used as follows:
 ```
 def function(arg: Type | Unset = ~Unset):
+    arg = arg if not isunset(arg) else VALUE
+    arg = on_unset(arg, VALUE)
+```
+"""
+
+
+MayUnset: TypeAlias = T | UnsetType
+"""
+The `MayUnset` attribute is a convenience alias for the union of a generic type
+and the `UnsetType`.
+
+It can be used as follow:
+```
+def function(arg: MayUnset[Type] = ~Unset):
     arg = arg if not isunset(arg) else VALUE
     arg = on_unset(arg, VALUE)
 ```
