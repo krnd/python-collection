@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal
 
 
 __sname__ = "appdata"
-__version__ = "2.0"
+__version__ = "2.1"
 __description__ = ...
 
 __requires__ = ()
@@ -55,9 +55,7 @@ def init(
 ) -> None:
 
     subpath = os.path.normpath(
-        os.path.join(container, folder)
-        if container is not None
-        else folder  # <format-break>
+        os.path.join(container, folder) if container else folder
     )
 
     # ################## PACKAGE ###########################
@@ -86,13 +84,11 @@ def init(
     basepath = os.getenv("APPDATA")
     if basepath is None:
         raise EnvironmentError(
-            "Environment variable %APPDATA% not found."
-            # <format-break>
+            "environment variable %APPDATA% not found",
         )
 
     __appdata_user_path__ = user_path = os.path.abspath(
         os.path.join(basepath, subpath)
-        # <format-break>
     )
 
     # ################## LOCAL #############################
@@ -101,13 +97,11 @@ def init(
     basepath = os.getenv("LOCALAPPDATA")
     if basepath is None:
         raise EnvironmentError(
-            "Environment variable %LOCALAPPDATA% not found."
-            # <format-break>
+            "environment variable %LOCALAPPDATA% not found",
         )
 
     __appdata_local_path__ = local_path = os.path.abspath(
         os.path.join(basepath, subpath)
-        # <format-break>
     )
 
     # ################## TEMP ##############################
@@ -116,33 +110,30 @@ def init(
     basepath = os.getenv("TEMP")
     if basepath is None:
         raise EnvironmentError(
-            "Environment variable %TEMP% not found."
-            # <format-break>
+            "environment variable %TEMP% not found",
         )
 
     __appdata_temp_path__ = temp_path = os.path.abspath(
         os.path.join(basepath, subpath)
-        # <format-break>
     )
 
     # ################## SERVER ############################
     global __appdata_server_path__, server_path
 
     basepath = (
-        server  # <format-break>
+        server
         if isinstance(server, str)
         else os.getenv("SERVERAPPDATA")
+        # <format-break>
     )
     if basepath is None and server is True:
         raise EnvironmentError(
-            "Environment variable %SERVERAPPDATA% not found."
-            # <format-break>
+            "environment variable %SERVERAPPDATA% not found",
         )
 
     if basepath is not None:
         __appdata_server_path__ = server_path = os.path.abspath(
             os.path.join(basepath, subpath)
-            # <format-break>
         )
 
 
@@ -156,8 +147,26 @@ def make(
     ],
 ) -> None:
     _globals = globals()
+    for entity in entities:
+        os.makedirs(
+            _globals[f"{entity}_path"],
+            exist_ok=True,
+        )
 
-    for name in entities:
-        path = _globals[f"__appdata_{name}_path__"]
 
-        os.makedirs(path, exist_ok=True)
+def get(
+    entity: Literal[
+        "package",
+        "user",
+        "local",
+        "temp",
+        "server",
+    ],
+    /,
+    *paths: str,
+) -> str:
+    _globals = globals()
+    return os.path.join(
+        _globals[f"{entity}_path"],
+        *paths,
+    )
