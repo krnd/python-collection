@@ -1,8 +1,14 @@
 from typing import (
+    Annotated,
     Callable,
     Final,
-    NamedTuple,
+    Literal,
+    Mapping,
     Sequence,
+    Tuple,
+    TypeAlias,
+    TypeVar,
+    overload,
 )
 
 from serial.tools.list_ports import comports as pyserial_list_ports
@@ -13,7 +19,7 @@ from serial.tools.list_ports_common import ListPortInfo as PortInfo
 
 
 __sname__ = "comport"
-__version__ = "1.0"
+__version__ = "2.0"
 __description__ = ...
 
 __requires__ = ("pyserial",)
@@ -22,24 +28,50 @@ __requires__ = ("pyserial",)
 __all__ = ()
 
 
-# ################################ TYPES #######################################
+# ################################ TYPING ######################################
 
 
-class _UsbFilter(NamedTuple):
-    vid: int
-    pid: int
+T = TypeVar("T")
+
+
+_FilterCollection: TypeAlias = Final[Mapping[str, Sequence[T]]]
 
 
 # ################################ CONSTANTS ###################################
 
 
-FILTERS_USB: Final = {
-    "ftdi": {
-        "": _UsbFilter(0x0403, 0x6001),
-        "dual": _UsbFilter(0x0403, 0x6010),
-        "quad": _UsbFilter(0x0403, 0x6011),
-        "new": _UsbFilter(0x0403, 0x6014),
-    },
+FILTERS_USB: _FilterCollection[
+    Tuple[
+        Annotated[int, "VID"],
+        Annotated[int, "PID"],
+    ]
+] = {
+    # FTDI (0x0403)
+    #   FT232BM/L/Q, FT245BM/L/Q    0x6001
+    #   FT232RL/Q, FT245RL/Q        0x6001
+    #   FT2232C/D/L                 0x6010
+    #   FT2232HL/Q                  0x6010
+    #   FT4232HL/Q                  0x6011
+    #   FT232HL/Q                   0x6014
+    #   VNC1L with VDPS Firmware    0x6001
+    #   VNC2 with FT232Slave        0x6001
+    "ftdi": (
+        (0x0403, 0x6001),
+        (0x0403, 0x6010),
+        (0x0403, 0x6011),
+        (0x0403, 0x6014),
+    ),
+    # Prolific (0x067B)
+    #   PL2303                      0x23A3
+    #   PL2303GD                    0x2323
+    "prolific": (
+        (0x067B, 0x23A3),
+        (0x067B, 0x2323),
+    ),
+    "pl2303": (
+        (0x067B, 0x23A3),
+        # The PL2303GD is not included here.
+    ),
 }
 
 
@@ -68,43 +100,54 @@ def get(name: str, /) -> PortInfo:
     raise KeyError(f"serial port {name!r} not found")
 
 
-def find(filter: str | None = None, /) -> PortInfo | None:
-    filter_callable: Callable[[PortInfo], bool]
+@overload
+def find() -> PortInfo | None: ...
 
-    if filter:
-        basefilter, _, subfilter = filter.partition(".")
-    else:
-        basefilter, subfilter = ("", "")
 
-    if not basefilter:
-        filter_callable = lambda port: True
+@overload
+def find(
+    filter: Literal["usb"],
+    /,
+    *,
+    pid: int,
+    vid: int | None = None,
+) -> PortInfo | None: ...
 
-    elif basefilter in FILTERS_USB:
-        specs = FILTERS_USB[basefilter]
 
-        try:
-            specs = (
-                (specs[subfilter],)
-                if subfilter
-                else specs.values()
-                # <format-break>
-            )
-        except KeyError as exc:
-            raise KeyError(f"unknown sub filter {filter!r}") from exc
+@overload
+def find(filter: str, /) -> PortInfo | None: ...
 
-        filter_callable = lambda port: any(
-            port.pid == spec.pid and port.vid == spec.pid
-            for spec in specs  # <format-break>
+
+def find(
+    filter: str | None = None,
+    /,
+    *,
+    pid: int | None = None,
+    vid: int | None = None,
+) -> PortInfo | None:
+    _filter: Callable[[PortInfo], bool]
+
+    if not filter:
+        _filter = lambda port: True
+    elif filter == "usb":
+        _filter = lambda port: (
+            (port.vid == vid)
+            if pid is None
+            else (port.vid == vid and port.pid == pid)
         )
-
+    elif filter in FILTERS_USB:
+        _filter = lambda port: any(
+            (port.vid == _vid and port.pid == _pid)
+            for _vid, _pid in FILTERS_USB[filter]
+        )
     else:
-        raise KeyError(f"unknown base filter {filter!r}")
+        raise KeyError(f"unknown filter {filter!r}")
 
     return next(
         (
             port  # <format-break>
             for port in pyserial_list_ports()
-            if filter_callable(port)
+            if _filter(port)
         ),
         None,
     )
