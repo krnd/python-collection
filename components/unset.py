@@ -1,11 +1,11 @@
-from typing import Any, Final, TypeAlias, TypeIs, TypeVar
+from typing import Any, Final, TypeAlias, TypeIs, TypeVar, cast
 
 
 # ################################ COMPONENT ###################################
 
 
 __component__ = "unset"
-__version__ = "1.4"
+__version__ = "1.5"
 __description__ = ...
 
 __requires__ = ()
@@ -13,7 +13,7 @@ __requires__ = ()
 
 __all__ = (
     # fmt: off
-    "UnsetType", "UNSET", "Unset",
+    "UnsetType", "UNSET", "Unset", "MayUnset",
     "isunset", "on_unset",
     # fmt: on
 )
@@ -24,7 +24,7 @@ __all__ = (
 
 T = TypeVar("T")
 
-TONCE: TypeAlias = Any
+TONCE = TypeVar("TONCE")
 
 
 # ################################ UNSET #######################################
@@ -34,7 +34,6 @@ class _UnsetType(type):
 
     def __invert__(self) -> "UnsetType":
         """Returns the unset value."""
-        global UNSET
         return UNSET
 
 
@@ -60,6 +59,7 @@ It can be used as follows:
 ```
 def function(arg: Type | Unset = ~Unset):
     arg = arg if not isunset(arg) else VALUE
+    # or
     arg = on_unset(arg, VALUE)
 ```
 """
@@ -70,10 +70,11 @@ MayUnset: TypeAlias = T | UnsetType
 The `MayUnset` attribute is a convenience alias for the union of a generic type
 and the `UnsetType`.
 
-It can be used as follow:
+It can be used as follows:
 ```
 def function(arg: MayUnset[Type] = ~Unset):
     arg = arg if not isunset(arg) else VALUE
+    # or
     arg = on_unset(arg, VALUE)
 ```
 """
@@ -87,7 +88,7 @@ def isunset(obj: Any, /) -> TypeIs[UnsetType]:
     return obj is UNSET
 
 
-def on_unset(obj: T | Unset, value: TONCE, /) -> T | TONCE:
+def on_unset(obj: T | UnsetType, value: TONCE, /) -> T | TONCE:
     """Returns either the object itself or the specified value if the object is
     unset."""
-    return value if obj is UNSET else obj
+    return value if obj is UNSET else cast(T, obj)
