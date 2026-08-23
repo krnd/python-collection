@@ -1,16 +1,7 @@
 import json
 from configparser import BasicInterpolation, ConfigParser
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Final,
-    Generic,
-    Mapping,
-    Type,
-    TypedDict,
-    TypeVar,
-    overload,
-)
+from typing import Any, Final, Generic, Mapping, TypedDict, TypeVar, overload
 
 import jsonschema
 
@@ -19,7 +10,7 @@ import jsonschema
 
 
 __component__ = "fini"
-__version__ = "1.1"
+__version__ = "1.2"
 __description__ = ...
 
 __requires__ = ("jsonschema",)
@@ -51,16 +42,22 @@ TPARSER = TypeVar(
 
 @dataclass(eq=False, frozen=True, slots=True)
 class IniSchema(Generic[TSCHEMA, TPARSER]):
-    decl: TSCHEMA
+    """An INI schema."""
 
-    parser: Type[TPARSER] | None
+    decl: Mapping[str, Any]
+    """Declaration of the underlying JSON Schema."""
+
+    parser: type[TPARSER] | None
+    """Parser type to read the data with."""
     args: Mapping[str, Any] | None
+    """Arguments for instantiating the parser."""
 
 
 # ################################ CONSTANTS ###################################
 
 
 DEFAULT_PARSER_TYPE: Final = ConfigParser
+"""Default parser type to read data with."""
 
 # fmt:off
 DEFAULT_PARSER_ARGS: Final = dict[str, Any](
@@ -77,6 +74,7 @@ DEFAULT_PARSER_ARGS: Final = dict[str, Any](
     converters=dict(),                   # {}
 )
 # fmt:on
+""""Default arguments for instantiating a parser."""
 
 
 # ################################ FUNCTIONS ###################################
@@ -85,17 +83,27 @@ DEFAULT_PARSER_ARGS: Final = dict[str, Any](
 def schema(
     path: str,
     /,
-    type: Type[TSCHEMA],
+    type: type[TSCHEMA],
     *,
-    parser: Type[TPARSER] | None = None,
+    parser: type[TPARSER] | None = None,
     **args: Any,
 ) -> IniSchema[TSCHEMA, TPARSER]:
+    """
+    Loads a INI schema from a file (JSON Schema).
+
+    :param path:
+        Path of the JSON Schema file.
+    :param type:
+        Type describing the data validated by the schema.
+    :param parser:
+        Parser type to read the data with.
+    :param args:
+        Arguments for instantiating the parser.
+    """
     schema: IniSchema[TSCHEMA, TPARSER]
 
     with open(path, "r", encoding="utf-8") as file:
-        s = file.read()
-
-    decl = json.loads(s)  # type: ignore
+        decl = json.load(file)
 
     schema = IniSchema(decl, parser, (args or None))
 
@@ -106,7 +114,7 @@ def schema(
 def load(
     path: str,
     /,
-    schema: Type[TSCHEMA],
+    schema: type[TSCHEMA],
 ) -> TSCHEMA: ...
 
 
@@ -123,10 +131,21 @@ def load(
 def load(
     path: str,
     /,
-    schema: IniSchema[TSCHEMA, TPARSER] | Type[TSCHEMA],
+    schema: IniSchema[TSCHEMA, TPARSER] | type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TSCHEMA:
+    """
+    Loads data from an INI file.
+
+    :param path:
+        Path of the INI file.
+    :param schema:
+        Schema to validate the data against,
+        or the type of the data to load.
+    :param validate:
+        Whether the data is validated against the schema.
+    """
     data: TSCHEMA
 
     if isinstance(schema, IniSchema):
@@ -153,7 +172,7 @@ def load(
 def loadp(
     path: str,
     /,
-    schema: Type[TSCHEMA],
+    schema: type[TSCHEMA],
 ) -> ConfigParser: ...
 
 
@@ -170,10 +189,24 @@ def loadp(
 def loadp(
     path: str,
     /,
-    schema: IniSchema[TSCHEMA, TPARSER] | Type[TSCHEMA],
+    schema: IniSchema[TSCHEMA, TPARSER] | type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TPARSER:
+    """
+    Loads data from an INI file.
+
+    :param path:
+        Path of the INI file.
+    :param schema:
+        Schema to validate the data against,
+        or the type of the data to load.
+    :param validate:
+        Whether the data is validated against the schema.
+
+    :return:
+        Returns the underlying `ConfigParser` instead of the data.
+    """
     data: TSCHEMA
 
     if isinstance(schema, IniSchema):
@@ -203,5 +236,5 @@ def _parserdict(source: ConfigParser, /) -> dict[str, Any]:
     return {
         section: dict(source.items(section))
         for section in source.sections()
-        # <format-newline>
+        # <format-break>
     }

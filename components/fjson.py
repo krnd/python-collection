@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Generic, Type, TypedDict, TypeVar, overload
+from typing import Any, Generic, Mapping, TypedDict, TypeVar, overload
 
 import jsonschema
 
@@ -9,7 +9,7 @@ import jsonschema
 
 
 __component__ = "fjson"
-__version__ = "1.1"
+__version__ = "1.2"
 __description__ = ...
 
 __requires__ = ("jsonschema",)
@@ -36,7 +36,10 @@ TSCHEMA = TypeVar(
 
 @dataclass(eq=False, frozen=True, slots=True)
 class JsonSchema(Generic[TSCHEMA]):
-    decl: TSCHEMA
+    """A JSON schema."""
+
+    decl: Mapping[str, Any]
+    """Declaration of the underlying JSON Schema."""
 
 
 # ################################ FUNCTIONS ###################################
@@ -45,14 +48,20 @@ class JsonSchema(Generic[TSCHEMA]):
 def schema(
     path: str,
     /,
-    type: Type[TSCHEMA],
+    type: type[TSCHEMA],
 ) -> JsonSchema[TSCHEMA]:
+    """
+    Loads a JSON schema from a file (JSON Schema).
+
+    :param path:
+        Path of the JSON Schema file.
+    :param type:
+        Type describing the data validated by the schema.
+    """
     schema: JsonSchema[TSCHEMA]
 
     with open(path, "r", encoding="utf-8") as file:
-        s = file.read()
-
-    decl = json.loads(s)  # type: ignore
+        decl = json.load(file)
 
     schema = JsonSchema(decl)
 
@@ -63,7 +72,7 @@ def schema(
 def load(
     path: str,
     /,
-    schema: Type[TSCHEMA],
+    schema: type[TSCHEMA],
 ) -> TSCHEMA: ...
 
 
@@ -80,16 +89,25 @@ def load(
 def load(
     path: str,
     /,
-    schema: JsonSchema[TSCHEMA] | Type[TSCHEMA],
+    schema: JsonSchema[TSCHEMA] | type[TSCHEMA],
     *,
     validate: bool = True,
 ) -> TSCHEMA:
+    """
+    Loads data from a JSON file.
+
+    :param path:
+        Path of the JSON file.
+    :param schema:
+        Schema to validate the data against,
+        or the type of the data to load.
+    :param validate:
+        Whether the data is validated against the schema.
+    """
     data: TSCHEMA
 
     with open(path, "r", encoding="utf-8") as file:
-        s = file.read()
-
-    data = json.loads(s)  # type: ignore
+        data = json.load(file)
 
     if validate and isinstance(schema, JsonSchema):
         jsonschema.validate(data, schema.decl)
