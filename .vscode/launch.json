@@ -5,7 +5,7 @@
             "name": "launch",
             "type": "debugpy",
             "request": "launch",
-            "module": "launch",
+            "program": "launch/launch_${fileBasenameNoExtension}.py",
             "console": "internalConsole",
             "justMyCode": false,
             "env": {
@@ -27,7 +27,7 @@
             "name": "terminal:launch",
             "type": "debugpy",
             "request": "launch",
-            "module": "launch",
+            "program": "launch/launch_${fileBasenameNoExtension}.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
