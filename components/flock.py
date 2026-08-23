@@ -4,7 +4,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, NamedTuple, Self, Type
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "flock"

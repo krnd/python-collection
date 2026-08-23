@@ -2,7 +2,7 @@ import builtins
 from typing import Any, Callable, Final, Iterable, Mapping, Tuple, TypeAlias
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "mapping"

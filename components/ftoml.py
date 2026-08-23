@@ -6,7 +6,7 @@ from typing import Generic, Type, TypedDict, TypeVar, overload
 import jsonschema
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "ftoml"

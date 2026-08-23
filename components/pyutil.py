@@ -3,7 +3,7 @@ import importlib
 from typing import Annotated, Any, Callable, Literal, Tuple, Union, overload
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "pyutil"

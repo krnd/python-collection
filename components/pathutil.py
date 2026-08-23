@@ -5,7 +5,7 @@ import os.path
 from typing import Iterable, Sequence
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "pathutil"

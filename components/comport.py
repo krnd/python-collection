@@ -15,7 +15,7 @@ from serial.tools.list_ports import comports as pyserial_list_ports
 from serial.tools.list_ports_common import ListPortInfo as PortInfo
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "comport"

@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 from bs4.element import PageElement
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "github"

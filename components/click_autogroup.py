@@ -3,7 +3,7 @@ from typing import Any, List
 import click
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "click_autogroup"

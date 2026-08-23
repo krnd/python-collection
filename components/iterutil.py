@@ -1,7 +1,7 @@
 from typing import Callable, Iterable, TypeVar, overload
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "iterutil"

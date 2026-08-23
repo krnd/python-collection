@@ -2,7 +2,7 @@ import builtins
 from typing import Callable, Iterable, Sequence, TypeAlias, TypeVar
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "sequence"

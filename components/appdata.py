@@ -4,7 +4,7 @@ import sys
 from typing import TYPE_CHECKING, Literal
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "appdata"

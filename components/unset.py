@@ -1,7 +1,7 @@
 from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 
 
-# ################################ PACKAGE #####################################
+# ################################ COMPONENT ###################################
 
 
 __component__ = "unset"
