@@ -1,26 +1,4 @@
-# ############ ENVIRONMENT #############
-
-# Command line utility to show dependency tree of packages
-pipdeptree
-
-
-# ############ DEVELOP #################
-
-# The uncompromising code formatter.
-black
-# the modular source code checker: pep8 pyflakes and co
-flake8
-# A plugin for flake8 finding likely bugs and design problems in your program.
-# Contains warnings that don't belong in pyflakes and pycodestyle.
-flake8-bugbear
-# A Python utility / library to sort Python imports.
-isort
-
-# pytest: simple powerful testing with Python
-pytest
-
-
-# ############ PROJECT #################
+# ###################### PROJECT ###########################
 
 # Screen-scraping library
 beautifulsoup4
@@ -40,3 +18,28 @@ pyserial
 PyYAML
 # Python HTTP for Humans.
 requests
+
+
+# ###################### TEST ##############################
+
+# pytest: simple powerful testing with Python
+pytest
+
+
+# ###################### DEVELOPMENT #######################
+
+# The uncompromising code formatter.
+# [JUSTIFICATION]
+#   Two blank lines after an import should be reduced to one
+#   (always_one_newline_after_import)
+#   https://github.com/psf/black/issues/2020
+#   https://github.com/psf/black/pull/4489
+black ~=25.12
+# the modular source code checker: pep8 pyflakes and co
+flake8
+# A plugin for flake8 finding likely bugs and design
+# problems in your program. Contains warnings that don't
+# belong in pyflakes and pycodestyle.
+flake8-bugbear
+# A Python utility / library to sort Python imports.
+isort

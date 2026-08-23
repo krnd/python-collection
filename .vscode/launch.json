@@ -2,22 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "python",
+            "name": "launch",
             "type": "debugpy",
             "request": "launch",
             "module": "source",
             "console": "internalConsole",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
-            }
-        },
-        {
-            "name": "python (terminal)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "source",
-            "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/source"
@@ -29,7 +18,32 @@
             "request": "launch",
             "program": "${file}",
             "console": "internalConsole",
-            "justMyCode": false
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
+        },
+        {
+            "name": "terminal:launch",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "source",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
+        },
+        {
+            "name": "terminal:file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/source"
+            }
         }
     ]
 }

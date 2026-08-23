@@ -1,13 +1,19 @@
+# python.venv.build.ps1 3.1
 #Requires -Version 5.1
 
 
 # ################################ VARIABLES ###################################
 
-$script:__InvokeBuild::Builder["python.venv"] = @{
-    LockfileExtension = @{
-        ".in"  = ".txt"
-        ".pip" = ".lock"
-    }
+$script:__InvokeBuild::Builder::PythonVenv = @{
+    RequirementsFileExtensions = @(
+        ".lock",
+        ".txt",
+        ".pip"
+    )
+    RequirementsFilePaths = @(
+        ".",
+        ".config"
+    )
 }
 
 
@@ -15,6 +21,8 @@ $script:__InvokeBuild::Builder["python.venv"] = @{
 
 CONFIGURE python.venv.shorthands `
     -Default $true
+CONFIGURE python.venv.projectpath `
+    -Default $false
 
 CONFIGURE python.venv.version `
     -Default "default"
@@ -22,17 +30,35 @@ CONFIGURE python.venv.path `
     -Default ".venv"
 
 CONFIGURE python.venv.requirements `
-    -Default "requirements.txt"
-CONFIGURE python.venv.compilants `
-    -Default @()
+    -Default $null
+
+CONFIGURE python.venv.sitecustomize `
+    -Default $null
 
 
-# ################################ SHORTHANDS ##################################
+# ################################ SETUP #######################################
 
 INVOKEBUILD:SETUP {
     if (CONF python.venv.shorthands) {
         if (__InvokeBuild::IsTaskMissing "..") {
             TASK .. python:venv:activate
+        }
+    }
+}
+
+INVOKEBUILD:SETUP {
+    if (CONF python.venv.projectpath) {
+        if ($env:PYTHONPATH) {
+            $PYTHONPATHS = $env:PYTHONPATH -split ';'
+        } else {
+            $PYTHONPATHS = @()
+        }
+        if ($PYTHONPATHS -notcontains ".") {
+            if ($env:PYTHONPATH) {
+                $env:PYTHONPATH = ".;$env:PYTHONPATH"
+            } else {
+                $env:PYTHONPATH = "."
+            }
         }
     }
 }
@@ -54,8 +80,9 @@ TASK python:venv:deactivate {
 }
 
 TASK python:venv:setup `
+    python:venv:deactivate, `
     python:venv:create, `
-    python:venv:compile, `
+    python:venv:activate, `
     python:venv:install
 
 TASK python:venv:create python:venv:deactivate, {
@@ -68,6 +95,11 @@ TASK python:venv:create python:venv:deactivate, {
             EXEC { py -m venv $Environment }
         }
     }
+}, {
+    $Environment = (CONF python.venv.path)
+    if (CONFIG:HAS python.venv.sitecustomize) {
+        COPY (CONF python.venv.sitecustomize) $Environment
+    }
 }, python:venv:activate, {
     EXEC {
         python `
@@ -75,56 +107,10 @@ TASK python:venv:create python:venv:deactivate, {
             --upgrade `
             --quiet
     }
-    EXEC {
-        python `
-            -m pip install pip-tools `
-            --upgrade `
-            --quiet
-    }
-}
-
-TASK python:venv:compile python:venv:activate, {
-    $INVOKE = $script:__InvokeBuild
-    $BUILDER = $INVOKE::Builder["python.venv"]
-
-    $Compilants = (CONF python.venv.compilants)
-
-    $Requirements = (CONF python.venv.requirements)
-    $Extension = [IO.Path]::GetExtension($Requirements)
-    foreach ($Item in $BUILDER.LockfileExtension.GetEnumerator()) {
-        if ($Item.Value -eq $Extension) {
-            $Requirements = [IO.Path]::ChangeExtension(
-                $Requirements,
-                $Item.Name)
-            $Extension = $null
-        } elseif ($Item.Name -eq $Extension) {
-            $Extension = $null
-        }
-    }
-    if ($null -ne $Extension) {
-        # Unable to revert extension of requirements file.
-    } elseif (Test-Path $Requirements -PathType Leaf) {
-        $Compilants += $Requirements
-    }
-
-    $Compilants | ForEach-Object {
-        $File = (Get-Item $_)
-        $Lockfile = [IO.Path]::ChangeExtension(
-            $File.FullName,
-            $BUILDER.LockfileExtension[$File.Extension])
-        EXEC {
-            pip-compile $File.FullName `
-                --output-file $Lockfile `
-                --strip-extras `
-                --no-header `
-                --no-annotate `
-                --quiet
-        }
-    }
 }
 
 TASK python:venv:install python:venv:activate, {
-    $Requirements = (CONF python.venv.requirements)
+    $Requirements = __InvokeBuild::Builder::PythonVenv::RequirementsFile
     if (Test-Path $Requirements -PathType Leaf) {
         EXEC {
             pip install `
@@ -142,15 +128,8 @@ TASK python:venv:reinstall python:venv:activate, {
             --upgrade `
             --quiet
     }
-    EXEC {
-        python `
-            -m pip install pip-tools `
-            --force-reinstall `
-            --upgrade `
-            --quiet
-    }
 }, {
-    $Requirements = (CONF python.venv.requirements)
+    $Requirements = __InvokeBuild::Builder::PythonVenv::RequirementsFile
     if (Test-Path $Requirements -PathType Leaf) {
         EXEC {
             pip install `
@@ -164,4 +143,33 @@ TASK python:venv:reinstall python:venv:activate, {
 
 TASK python:venv:purge python:venv:deactivate, {
     REMOVE (CONF python.venv.path)
+}
+
+
+# ################################ INTERNALS ###################################
+
+function __InvokeBuild::Builder::PythonVenv::RequirementsFile {
+    [CmdletBinding(PositionalBinding = $false)]
+    param (
+        [Parameter()]
+        [switch]
+        $Xxx
+    )
+    $INVOKE = $script:__InvokeBuild
+    $BUILDER = $INVOKE::Builder::PythonVenv
+
+    if (CONFIG:HAS python.venv.requirements) {
+        return (CONF python.venv.requirements)
+    }
+
+    foreach ($SearchPath in $BUILDER::RequirementsFilePaths) {
+        foreach ($Extension in $BUILDER::RequirementsFileExtensions) {
+            $File = (Join-Path $SearchPath "requirements$Extension")
+            if (Test-Path $File -Type Leaf) {
+                return $File
+            }
+        }
+    }
+
+    return "requirements.txt"
 }

@@ -1,3 +1,4 @@
+# .build.ps1 1.1
 #Requires -Version 5.1
 
 
@@ -27,9 +28,12 @@ $script:__InvokeBuild = @{
         ".",
         ".invoke",
         ".invokebuild",
+        ".invokerunner",
         "invoke",
         "invokebuild",
-        "invoke-build"
+        "invokerunner",
+        "invoke-build",
+        "invoke-runner"
     )
 }
 

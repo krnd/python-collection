@@ -1,11 +1,52 @@
+# argument.plugin.ps1 2.0
 #Requires -Version 5.1
 
 
 # ################################ VARIABLES ###################################
 
 $script:__InvokeBuild::Plugin::Argument = @{
-    File   = $MyInvocation.MyCommand.Name
-    Prefix = "ARGUMENT"
+    File      = $MyInvocation.MyCommand.Name
+    Prefix    = "ARGUMENT"
+    Arguments = @{}
+}
+
+
+# ################################ SETUP #######################################
+
+INVOKEBUILD:SETUP {
+    $INVOKE = $script:__InvokeBuild
+    $PLUGIN = $INVOKE::Plugin::Argument
+    $ARGUMENTS = $PLUGIN::Arguments
+
+    if (-not $INVOKE::Arguments) {
+        $PLUGIN::Arguments = $null
+
+        return
+    }
+
+    $Key = $null
+    foreach ($Argument in $INVOKE::Arguments) {
+        if ($Argument -is [string] -and $Argument.StartsWith("-")) {
+            if ($null -ne $Key) {
+                $ARGUMENTS[$Key] = $true
+            }
+            $Key = $Argument.ToLower()
+        } else {
+            if ($null -eq $Key) {
+                throw "[$($PLUGIN::Prefix)] " `
+                    + "Argument '$Argument' is positional."
+            } elseif ($ARGUMENTS.ContainsKey($Key)) {
+                throw "[$($PLUGIN::Prefix)] " `
+                    + "Argument '$Key' specified multiple times."
+            } else {
+                $ARGUMENTS[$Key] = $Argument
+            }
+            $Key = $null
+        }
+    }
+    if ($null -ne $Key) {
+        $ARGUMENTS[$Key] = $true
+    }
 }
 
 
@@ -45,28 +86,20 @@ function __InvokeBuild::Plugin::Argument::*GET {
     )
     $INVOKE = $script:__InvokeBuild
     $PLUGIN = $INVOKE::Plugin::Argument
-    $ARGUMENTS = $INVOKE::Arguments
+    $ARGUMENTS = $PLUGIN::Arguments
 
+    $Name = "-$($Name.ToLower())"
     if (-not $ARGUMENTS) {
-        if ($Test) {
-            return $false
-        } elseif ($Switch) {
-            return $false
-        } elseif (-not $Required) {
-            return $Default
-        } elseif ($null -ne $Default) {
-            return $Default
-        }
-        throw "[$($PLUGIN::Prefix):GET] " `
-            + "Argument '$Name' not found."
+        $IsPresent = $false
+    } else {
+        $IsPresent = $ARGUMENTS.ContainsKey($Name)
     }
 
-    $Index = $ARGUMENTS.IndexOf("-$Name")
     if ($Test) {
-        return ($Index -ge 0)
+        return $IsPresent
     } elseif ($Switch) {
-        return ($Index -ge 0)
-    } elseif ($Index -lt 0) {
+        return $IsPresent
+    } elseif (-not $IsPresent) {
         if (-not $Required) {
             return $Default
         } elseif ($null -ne $Default) {
@@ -76,12 +109,7 @@ function __InvokeBuild::Plugin::Argument::*GET {
             + "Argument '$Name' not found."
     }
 
-    if (($Index + 1) -ge $ARGUMENTS.Length) {
-        throw "[$($PLUGIN::Prefix):GET] " `
-            + "Argument '$Name' has no value."
-    }
-
-    $RawValue = $ARGUMENTS[$Index + 1]
+    $RawValue = $ARGUMENTS[$Name]
     if ($Boolean) {
         $Value = $RawValue -as [boolean]
     } elseif ($Number) {

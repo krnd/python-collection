@@ -1,3 +1,4 @@
+# common.build.ps1 1.1
 #Requires -Version 5.1
 
 
@@ -46,7 +47,7 @@ TASK ...
 # ###################### File Manager ######################
 
 TASK / {
-    $Platform = $PSVersionTable.Platform
+    $Platform = $PSVersionTable['Platform']
     if ($null -eq $Platform) {
         EXEC { explorer . }
     } elseif ($Platform -eq "Win32NT") {

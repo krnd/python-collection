@@ -1,3 +1,4 @@
+# common.helpers.ps1 1.3
 #Requires -Version 5.1
 
 
@@ -6,14 +7,14 @@
 # ###################### Path ##############################
 
 function Join-Paths {
-    [CmdletBinding(PositionalBinding = $False)]
+    [CmdletBinding(PositionalBinding = $false)]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromRemainingArguments)]
         [string[]]
         $Paths
     )
     $Result = $Paths[0]
-    foreach ($Item in $Paths[1..$Paths.Count]) {
+    foreach ($Item in $Paths[1..($Paths.Count-1)]) {
         $Result = (Join-Path $Result $Item)
     }
     return $Result
@@ -23,20 +24,24 @@ function Join-Paths {
 # ###################### File ##############################
 
 function Out-FileUTF8NoBOM {
-    [CmdletBinding(PositionalBinding = $False)]
+    [CmdletBinding(PositionalBinding = $false)]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [string[]]
+        [string]
         $FilePath,
         [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
         [string[]]
         $Text,
         [Parameter()]
         [switch]
+        $AsLines,
+        [Parameter()]
+        [switch]
         $Append
     )
     begin {
-        $UTF8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+        $FilePath = [System.IO.Path]::Combine((Get-Location), $FilePath)
+        $UTF8NoBomEncoding = New-Object System.Text.UTF8Encoding $false
         if (-not $Append) {
             [System.IO.File]::WriteAllText(
                 $FilePath, [System.String]::Empty,
@@ -44,9 +49,18 @@ function Out-FileUTF8NoBOM {
         }
     }
     process {
-        [System.IO.File]::AppendAllLines(
-            $FilePath, $Text,
-            $UTF8NoBomEncoding)
+        if (-not $AsLines -and ($Text.Length -eq 1)) {
+            # If there is only a single string provided, we assume it contains
+            # the complete file - including newlines. To prevent multiple
+            # trailing newlines we append as text instead of as line.
+            [System.IO.File]::AppendAllText(
+                $FilePath, $Text[0],
+                $UTF8NoBomEncoding)
+        } else {
+            [System.IO.File]::AppendAllLines(
+                $FilePath, $Text,
+                $UTF8NoBomEncoding)
+        }
     }
 }
 
@@ -54,7 +68,7 @@ function Out-FileUTF8NoBOM {
 # ###################### JSON ##############################
 
 function Test-JsonObject {
-    [CmdletBinding(PositionalBinding = $False)]
+    [CmdletBinding(PositionalBinding = $false)]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [object]
@@ -69,7 +83,7 @@ function Test-JsonObject {
 }
 
 function Select-JsonObject {
-    [CmdletBinding(PositionalBinding = $False)]
+    [CmdletBinding(PositionalBinding = $false)]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [object]
@@ -94,7 +108,7 @@ function Select-JsonObject {
 }
 
 function Set-JsonObject {
-    [CmdletBinding(PositionalBinding = $False)]
+    [CmdletBinding(PositionalBinding = $false)]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [object]
@@ -112,7 +126,7 @@ function Set-JsonObject {
 }
 
 function Expand-JsonObject {
-    [CmdletBinding(PositionalBinding = $False, DefaultParameterSetName = "Items")]
+    [CmdletBinding(PositionalBinding = $false, DefaultParameterSetName = "Items")]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [object]

@@ -3,17 +3,21 @@
 
 # ################################ TASKS #######################################
 
-# ###################### SETUP #############################
-
-TASK setup          python:venv:setup
-
-
 # ###################### TEST ##############################
 
-TASK test           python:test:all
+TASK test python:pytest:all
 
 
-# ###################### CLEAN #############################
+# ###################### ENVIRONMENT #######################
 
-TASK clean          python:test:clean
-TASK purge          clean, python:venv:clean
+TASK env:setup python:venv:setup
+
+TASK env:purge python:venv:purge
+
+
+# ###################### STASH #############################
+
+TASK stash {
+    Start-Process "./.stash/stash.bat" `
+        -WorkingDirectory "./.stash"
+}

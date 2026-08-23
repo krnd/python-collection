@@ -1,1 +1,4 @@
-{}
+{
+    // Ensure the favored version for black is used.
+    "black-formatter.importStrategy": "fromEnvironment"
+}
