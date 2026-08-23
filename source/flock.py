@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, NamedTuple, Self, Type
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "flock"
+__component__ = "flock"
 __version__ = "1.0"
 __description__ = ...
 

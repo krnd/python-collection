@@ -21,7 +21,7 @@ from typing import (
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "walker"
+__component__ = "walker"
 __version__ = "2.0"
 __description__ = ...
 

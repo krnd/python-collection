@@ -9,7 +9,7 @@ import jsonschema
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "ftoml"
+__component__ = "ftoml"
 __version__ = "1.1"
 __description__ = ...
 

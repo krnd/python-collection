@@ -6,7 +6,7 @@ from typing import Annotated, Any, Callable, Literal, Tuple, Union, overload
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "pyutil"
+__component__ = "pyutil"
 __version__ = "1.1"
 __description__ = ...
 

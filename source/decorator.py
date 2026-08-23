@@ -16,7 +16,7 @@ from typing import (
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "decorator"
+__component__ = "decorator"
 __version__ = "1.0"
 __description__ = ...
 
@@ -62,13 +62,13 @@ class _DecoratorWithArguments(Protocol, Generic[TI, TO, P]):
 
 @overload
 def decorator(
-    decorator: Callable[[TI], TO]
+    decorator: Callable[[TI], TO],
 ) -> _DecoratorWithoutArguments[TI, TO]: ...
 
 
 @overload
 def decorator(
-    decorator: Callable[Concatenate[TI, P], TO]
+    decorator: Callable[Concatenate[TI, P], TO],
 ) -> _DecoratorWithArguments[TI, TO, P]: ...
 
 
@@ -87,13 +87,13 @@ def decorator(decorator: _Ignore) -> _Ignore:
 
 @overload
 def classdecorator(
-    decorator: Callable[[TI], TO]
+    decorator: Callable[[TI], TO],
 ) -> _DecoratorWithoutArguments[TI, TO]: ...
 
 
 @overload
 def classdecorator(
-    decorator: Callable[Concatenate[TI, P], TO]
+    decorator: Callable[Concatenate[TI, P], TO],
 ) -> _DecoratorWithArguments[TI, TO, P]: ...
 
 

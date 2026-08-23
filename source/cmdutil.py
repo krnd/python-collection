@@ -10,7 +10,7 @@ import cmd2.ansi as _ansi
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "cmdutil"
+__component__ = "cmdutil"
 __version__ = "1.1"
 __description__ = ...
 

@@ -8,7 +8,7 @@ from typing import Iterable, Sequence
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "pathutil"
+__component__ = "pathutil"
 __version__ = "1.0"
 __description__ = ...
 

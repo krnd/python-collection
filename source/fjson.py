@@ -8,7 +8,7 @@ import jsonschema
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "fjson"
+__component__ = "fjson"
 __version__ = "1.1"
 __description__ = ...
 

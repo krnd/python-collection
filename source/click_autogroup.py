@@ -6,7 +6,7 @@ import click
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "click_autogroup"
+__component__ = "click_autogroup"
 __version__ = "1.3"
 __description__ = ...
 

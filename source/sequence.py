@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Sequence, TypeAlias, TypeVar
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "sequence"
+__component__ = "sequence"
 __version__ = "1.0"
 __description__ = ...
 

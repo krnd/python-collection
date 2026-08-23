@@ -18,7 +18,7 @@ from serial.tools.list_ports_common import ListPortInfo as PortInfo
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "comport"
+__component__ = "comport"
 __version__ = "2.0"
 __description__ = ...
 

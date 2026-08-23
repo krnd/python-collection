@@ -21,7 +21,7 @@ from bs4.element import PageElement
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "github"
+__component__ = "github"
 __version__ = "1.0"
 __description__ = ...
 

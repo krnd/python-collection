@@ -4,7 +4,7 @@ from typing import Any, Final, TypeAlias, TypeIs, TypeVar
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "unset"
+__component__ = "unset"
 __version__ = "1.4"
 __description__ = ...
 

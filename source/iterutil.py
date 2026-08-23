@@ -4,7 +4,7 @@ from typing import Callable, Iterable, TypeVar, overload
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "iterutil"
+__component__ = "iterutil"
 __version__ = "1.0"
 __description__ = ...
 

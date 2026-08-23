@@ -4,7 +4,7 @@ from typing import Final, Literal
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "nbase"
+__component__ = "nbase"
 __version__ = "1.0"
 __description__ = ...
 

@@ -18,7 +18,7 @@ import jsonschema
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "fini"
+__component__ = "fini"
 __version__ = "1.1"
 __description__ = ...
 

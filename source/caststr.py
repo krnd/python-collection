@@ -1,7 +1,9 @@
 import builtins
 import typing
 from types import EllipsisType, NoneType
-from typing import Annotated
+from typing import (
+    Annotated,
+)
 from typing import Any
 from typing import Any as _Ignore
 from typing import (
@@ -19,7 +21,7 @@ from typing import (
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "caststr"
+__component__ = "caststr"
 __version__ = "1.0"
 __description__ = ...
 

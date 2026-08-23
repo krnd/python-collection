@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "appdata"
+__component__ = "appdata"
 __version__ = "2.1"
 __description__ = ...
 

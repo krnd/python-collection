@@ -9,7 +9,7 @@ import yaml
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "fyaml"
+__component__ = "fyaml"
 __version__ = "1.1"
 __description__ = ...
 

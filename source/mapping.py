@@ -5,7 +5,7 @@ from typing import Any, Callable, Final, Iterable, Mapping, Tuple, TypeAlias
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "mapping"
+__component__ = "mapping"
 __version__ = "1.0"
 __description__ = ...
 

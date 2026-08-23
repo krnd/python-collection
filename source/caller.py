@@ -16,7 +16,7 @@ from typing import (
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "caller"
+__component__ = "caller"
 __version__ = "1.0"
 __description__ = ...
 

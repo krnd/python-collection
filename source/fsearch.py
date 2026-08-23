@@ -16,7 +16,7 @@ from typing import (
 # ################################ PACKAGE #####################################
 
 
-__sname__ = "fsearch"
+__component__ = "fsearch"
 __version__ = "1.0"
 __description__ = ...
 
