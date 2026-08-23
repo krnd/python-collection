@@ -8,3 +8,7 @@ line-length = 80
 [tool.isort]
 profile = "black"
 lines_after_imports = 2
+
+[tool.pytest]
+pythonpath = ["components"]
+testpaths = ["tests"]
