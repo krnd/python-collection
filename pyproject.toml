@@ -1,6 +1,6 @@
 [tool.pyright]
 reportMissingTypeStubs = false
-extraPaths = ["source"]
+extraPaths = ["components"]
 
 [tool.black]
 line-length = 80

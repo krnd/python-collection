@@ -5,11 +5,11 @@
             "name": "launch",
             "type": "debugpy",
             "request": "launch",
-            "module": "source",
+            "module": "launch",
             "console": "internalConsole",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
+                "PYTHONPATH": "${workspaceFolder}/components"
             }
         },
         {
@@ -20,18 +20,18 @@
             "console": "internalConsole",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
+                "PYTHONPATH": "${workspaceFolder}/components"
             }
         },
         {
             "name": "terminal:launch",
             "type": "debugpy",
             "request": "launch",
-            "module": "source",
+            "module": "launch",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
+                "PYTHONPATH": "${workspaceFolder}/components"
             }
         },
         {
@@ -42,7 +42,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/source"
+                "PYTHONPATH": "${workspaceFolder}/components"
             }
         }
     ]
