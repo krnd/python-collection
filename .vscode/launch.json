@@ -9,7 +9,7 @@
             "console": "internalConsole",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/components"
+                "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
         },
         {
@@ -20,7 +20,7 @@
             "console": "internalConsole",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/components"
+                "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
         },
         {
@@ -31,7 +31,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/components"
+                "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
         },
         {
@@ -42,7 +42,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}/components"
+                "PYTHONPATH": "${workspaceFolder}/components:${workspaceFolder}/components.ieb"
             }
         }
     ]
