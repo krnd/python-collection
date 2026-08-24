@@ -5,9 +5,9 @@
             "name": "launch",
             "type": "debugpy",
             "request": "launch",
-            "program": "launch/launch_${fileBasenameNoExtension}.py",
+            "module": "launch",
             "console": "internalConsole",
-            "justMyCode": false,
+            "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
@@ -18,32 +18,21 @@
             "request": "launch",
             "program": "${file}",
             "console": "internalConsole",
-            "justMyCode": false,
+            "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
         },
         {
-            "name": "terminal:launch",
+            "name": "file:launch",
             "type": "debugpy",
             "request": "launch",
             "program": "launch/launch_${fileBasenameNoExtension}.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
+            "console": "internalConsole",
+            "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/components;${workspaceFolder}/components.ieb"
             }
         },
-        {
-            "name": "terminal:file",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/components:${workspaceFolder}/components.ieb"
-            }
-        }
     ]
 }
