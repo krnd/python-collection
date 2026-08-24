@@ -4,7 +4,6 @@ import os.path
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Final,
     Generic,
     Iterable,
@@ -15,6 +14,7 @@ from typing import (
     Self,
     TypeAlias,
     TypeVar,
+    cast,
 )
 
 
@@ -22,7 +22,7 @@ from typing import (
 
 
 __component__ = "walker"
-__version__ = "2.0"
+__version__ = "3.0"
 __description__ = ...
 
 __requires__ = ()
@@ -50,21 +50,34 @@ _YieldMode: TypeAlias = Literal["file", "dir"]
 
 class _StackEntry(NamedTuple):
     scanpath: str
+    """Path of the walked directory. (host-style separator)"""
+    scanpathunix: str
+    """Path of the walked directory. (unix-style separator)"""
     scaniter: Iterator[os.DirEntry[str]] | None
+    """Iterator instance of the walked directory."""
     dirqueue: List[str]
+    """Pending directories inside the walked directory."""
 
 
 # ################################ WALKER ######################################
 
 
 class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
-    # ################## FIELDS ############################
+    """
+    Depth-first iterator over the directory tree below a base path.
+    (The iterator is single-pass and cannot be restarted.)
+
+    Junctions are not supported and raise `NotImplementedError` unless they
+    are excluded beforehand.
+    """
 
     basepath: Final[str]
     """Path from which to start."""
 
     symlinks: Final[bool]
     """Whether to follow symbolic links."""
+    _unixstyle: Final[bool]
+    """Whether paths using the unix-style separator must be generated."""
 
     mode: Final[_YieldMode | None]
     """
@@ -78,11 +91,20 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
     """Whether to yield files."""
 
     _ignores: Final[List[str] | None]
-    """Directory name patterns to ignore. (`fnmatch`-style)"""
+    """
+    Directory name patterns to ignore.
+    (`fnmatch`-style)
+    """
     _includes: Final[List[str] | None]
-    """Entry name patterns to include when yielding. (`fnmatch`-style)"""
+    """
+    Entry name patterns to include when yielding.
+    (`fnmatch`-style)
+    """
     _excludes: Final[List[str] | None]
-    """Entry name patterns to exclude when yielding. (`fnmatch`-style)"""
+    """
+    Entry name patterns to exclude when yielding.
+    (`fnmatch`-style)
+    """
     _skiplist: List[str]
     """
     Dynamic list of skipped entry names.
@@ -90,7 +112,7 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
     """
 
     _scanpath: str
-    """Path of the currently walked directory."""
+    """Path of the currently walked directory. (host-style separator)"""
     _scanpathunix: str
     """Path of the currently walked directory. (unix-style separator)"""
     _scaniter: Iterator[os.DirEntry[str]] | None
@@ -100,8 +122,6 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
     _stack: List[_StackEntry]
     """Stack of all currently walked directories. (depth-first)"""
-
-    # ################## STRUCTORS #########################
 
     def __init__(
         self,
@@ -114,20 +134,27 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
         symlinks: bool = True,
     ) -> None:
         """
-        :param path: Path from which to start.
-        :param mode: Indicates what types of entries should be yielded.
-        :param ignore: Directory name patterns to ignore.
-                       (`fnmatch`-style)
-        :param include: Entry name patterns to include when yielding.
-                        (`fnmatch`-style)
-        :param exclude: Entry name patterns to exclude when yielding.
-                        (`fnmatch`-style)
-        :param symlinks: Whether to follow symbolic links.
+        :param path:
+            Path from which to start.
+        :param mode:
+            Indicates what types of entries should be yielded.
+        :param ignore:
+            Directory name patterns to ignore.
+            (`fnmatch`-style)
+        :param include:
+            Entry name patterns to include when yielding.
+            (`fnmatch`-style)
+        :param exclude:
+            Entry name patterns to exclude when yielding.
+            (`fnmatch`-style)
+        :param symlinks:
+            Whether to follow symbolic links.
         """
 
         self.basepath = os.path.abspath(path)
 
         self.symlinks = symlinks
+        self._unixstyle = os.sep != "/"
 
         self.mode = mode
         self._yielddir = mode is None or mode == "dir"
@@ -145,17 +172,20 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
         self._stack = list()
 
-        # Add the starting directory.
+        # Add the starting directory to the pending directories.
         self._dirqueue.append("")
-
-    # ################## PROPERTIES ########################
 
     @property
     def path(self) -> str:
-        """Path of the currently walked directory."""
-        return self._scanpath
-
-    # ################## INTERFACE #########################
+        """
+        Absolute path of the currently walked directory.
+        (host-style separator)
+        """
+        return (
+            os.path.join(self.basepath, self._scanpath)
+            if self._scanpath
+            else self.basepath
+        )
 
     def skip(self, name: str, /) -> None:
         """
@@ -164,26 +194,54 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
         """
         self._skiplist.append(name)
 
-    # ################## BASECLASS #########################
-
     @abstractmethod
-    def make_entry(self, entry: os.DirEntry[str], upath: str) -> TENTRY: ...
+    def create_entry(self, entry: os.DirEntry[str], path: str) -> TENTRY:
+        """
+        Creates an entry object from the yielded `os.DirEntry`.
 
-    if TYPE_CHECKING:
+        :param entry:
+            The `os.DirEntry` from which to create the entry.
+        :param path:
+            Absolute path of the entry. (unix-style separator)
+        """
+        ...
 
-        def on_enter(self, path: str) -> None: ...
-        def on_exit(self, path: str) -> None: ...
+    def check_ignore(self, entry: os.DirEntry[str], path: str) -> bool:
+        """
+        Returns whether a directory should be ignored.
+        (Ignored directories are neither yielded nor walked into.)
 
-    # ################## ITERATOR ##########################
+        :param entry:
+            The `os.DirEntry` of the directory to check.
+        :param path:
+            Absolute path of the directory.
+            (unix-style separator)
+        """
+        return False
+
+    def on_enter(self, path: str) -> None:
+        """
+        Callback executed upon entering a directory.
+        (The path uses unix-style separators.)
+        """
+        pass
+
+    def on_exit(self, path: str) -> None:
+        """
+        Callback executed upon exiting a directory.
+        (The path uses unix-style separators.)
+        """
+        pass
 
     def __iter__(self) -> Self:
         return self
 
     def __next__(self) -> TENTRY:  # noqa: C901
         while True:
+            # Prevents the type checker from reporting unbound variable.
             entry = None
 
-            if self._scaniter:
+            if self._scaniter is not None:
                 try:
                     entry = next(self._scaniter)
                 except StopIteration:
@@ -199,36 +257,39 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
                 continue
 
-            assert entry is not None, (
-                f"Variable {'entry'!r} is unexpectedly unset."
-                f" ({self._scanpath!r})"
-            )
-
+            # The entry is guaranteed to be present at this point.
+            entry = cast(os.DirEntry[str], entry)
             # Absolute path of the entry using unix-style separator.
-            _upath = entry.path.replace(os.sep, "/")
+            _upath = (
+                entry.path.replace(os.sep, "/")
+                if self._unixstyle
+                else entry.path
+            )
 
             if entry.name in self._skiplist:
                 continue
-
-            if entry.is_junction():
-                raise NotImplementedError(
-                    f"Junctions are currently not supported."
-                    f" ({entry.path!r})"
-                )
 
             if entry.is_dir():
 
                 if self._ignores and any(
                     fnmatch.fnmatchcase(entry.name, filter)
                     for filter in self._ignores
-                    # <format-break>
                 ):
                     continue
+                elif self.check_ignore(entry, _upath):
+                    continue
+
+                if entry.is_junction():
+                    raise NotImplementedError(
+                        f"junctions are not supported ({entry.path})",
+                    )
 
                 if not entry.is_symlink():
                     self._dirqueue.append(entry.name)
                 elif self.symlinks:
                     self._dirqueue.append(entry.name)
+                else:
+                    continue
 
                 if not self._yielddir:
                     continue
@@ -251,24 +312,31 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
 
             break
 
-        return self.make_entry(entry, _upath)
+        return self.create_entry(entry, _upath)
 
-    def __next_dir__(self) -> bool:
+    def __next_dir__(self) -> None:
         while self._dirqueue:
-            _dirname = self._dirqueue.pop(0)
-
-            scanpath = os.path.join(self._scanpath, _dirname)
+            scanpath = os.path.join(
+                self._scanpath,
+                self._dirqueue.pop(0),
+            )
+            scanpathunix = (
+                scanpath.replace(os.sep, "/")
+                if self._unixstyle
+                else scanpath  #
+            )
 
             self._stack.append(
                 _StackEntry(
                     self._scanpath,
+                    self._scanpathunix,
                     self._scaniter,
                     self._dirqueue,
                 )
             )
 
             self._scanpath = scanpath
-            self._scanpathunix = scanpath.replace(os.sep, "/")
+            self._scanpathunix = scanpathunix
             self._scaniter = os.scandir(
                 os.path.join(
                     self.basepath,
@@ -277,31 +345,37 @@ class Walker(ABC, Generic[TENTRY], Iterator[TENTRY]):
             )
             self._dirqueue = list()
 
-            if hasattr(self, "on_enter"):
-                self.on_enter(scanpath)
+            self.on_enter(scanpathunix)
 
-            return True
+            return
 
         if self._stack:
             _stackentry = self._stack.pop()
 
-            if hasattr(self, "on_exit"):
-                self.on_exit(self._scanpath)
+            self.on_exit(self._scanpathunix)
 
             self._scanpath = _stackentry.scanpath
+            self._scanpathunix = _stackentry.scanpathunix
             self._scaniter = _stackentry.scaniter
             self._dirqueue = _stackentry.dirqueue
 
-            return False
+            return
 
         raise StopIteration()
 
 
-# ################################ GENERIC #####################################
+# ################################ BUILTIN #####################################
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class DirEntry:
+    """Immutable `os.DirEntry` wrapper with precomputed paths."""
+
+    # TODO Comparing by inode is only reliable within a single drive.
+    # The inode numbers are reused across drives, so entries from different
+    # drives can end up treated as the same entry. Including the drive
+    # (`stat().st_dev`) would fix it, at the cost of an extra `stat()` call.
+
     _entry: os.DirEntry[str]
     """Actual `os.DirEntry` as yielded internally by the walker."""
 
@@ -318,30 +392,43 @@ class DirEntry:
     (unix-style separator)
     """
     rpath: str
-    """Absolute path of the entry."""
+    """Absolute path of the entry. (host-style separator)"""
     upath: str
     """Absolute path of the entry. (unix-style separator)"""
 
     def is_dir(self) -> bool:
-        """Returns whether the entry is a directory or a symbolic link pointing to a directory."""
+        """
+        Returns whether the entry is a directory or a symbolic link pointing to a directory.
+        """
         return self._entry.is_dir()
 
     def is_file(self) -> bool:
-        """Returns whether the entry is a file or a symbolic link pointing to a file."""
+        """
+        Returns whether the entry is a file or a symbolic link pointing to a file.
+        """
         return self._entry.is_file()
 
     def is_symlink(self) -> bool:
-        """Returns whether the entry is a symbolic link."""
+        """
+        Returns whether the entry is a symbolic link.
+        """
         return self._entry.is_symlink()
 
     def stat(self) -> os.stat_result:
-        """Returns a `stat_result` object for this entry."""
+        """
+        Returns a `stat_result` object for this entry.
+        """
         return self._entry.stat()
 
     def __eq__(self, other: object, /) -> bool:
-        if not isinstance(other, DirEntry):
-            return False
-        return self._entry.inode() == other._entry.inode()
+        return (
+            (self._entry.inode() == other._entry.inode())
+            if isinstance(other, DirEntry)
+            else False
+        )
+
+    def __hash__(self) -> int:
+        return self._entry.inode()
 
     def __repr__(self) -> str:
         kind = "Directory" if self._entry.is_dir() else "File"
@@ -349,20 +436,26 @@ class DirEntry:
 
 
 class DirWalker(Walker[DirEntry]):
-    def make_entry(
+    """Walker yielding `DirEntry` entries."""
+
+    def create_entry(
         self,
         entry: os.DirEntry[str],
-        upath: str,
+        path: str,
     ) -> DirEntry:
         return DirEntry(
             entry,
             entry.name,
-            # Prefer unix-style separator.
-            #   ```os.path.join(self._scanpath, entry.name)```
-            f"{self._scanpathunix}/{entry.name}",
-            # Prefer unix-style separator.
-            #   ```self._scanpath```
+            # Prefer unix-style instead of host-style separator.
+            #   os.path.join(self._scanpath, entry.name)
+            (
+                f"{self._scanpathunix}/{entry.name}"
+                if self._scanpathunix
+                else entry.name
+            ),
+            # Prefer unix-style instead of host-style separator.
+            #   self._scanpath
             self._scanpathunix,
             entry.path,
-            upath,
+            path,
         )
