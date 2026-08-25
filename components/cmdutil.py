@@ -3,18 +3,22 @@ import types
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Final, Generator, Literal, overload
 
-import cmd2 as _cmd
-import cmd2.ansi as _ansi
+import cmd2
+from cmd2.argparse_utils import Cmd2ArgumentParser
+from cmd2.rich_utils import Cmd2ExceptionConsole
+from rich.highlighter import ReprHighlighter
+from rich.text import Text
+from rich.traceback import Traceback
 
 
 # ################################ COMPONENT ###################################
 
 
 __component__ = "cmdutil"
-__version__ = "1.1"
+__version__ = "2.0"
 __description__ = ...
 
-__requires__ = ()
+__requires__ = ("cmd2" "~=4.0",)
 
 
 __all__ = ()
@@ -32,12 +36,13 @@ ALL_COMMANDS: Final = (
     "macro",
     "py",
     "quit",
+    "_eof",
     "run_pyscript",
     "run_script",
     "_relative_run_script",
     "set",
     "shell",
-    "shortcut",
+    "shortcuts",
 )
 """Collection of all built-in commands."""
 
@@ -46,7 +51,7 @@ ALL_COMMANDS: Final = (
 
 
 def setup(  # noqa: C901
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     *sets: Literal[
         "base",
@@ -60,21 +65,25 @@ def setup(  # noqa: C901
     """
     Setup a command interpreter.
 
+    Every built-in command not covered by the given sets is removed.
+    The commands `help`, `quit`, `_eof` and `set` are always kept,
+    `ipy` is always removed.
+
     :param "base":
         Whether to exclude the advanced commands.
-        (commands: alias, macro, shortcut)
+        (commands: alias, macro, shortcuts)
     :param "file":
         Whether to include all file manipulation commands.
         (commands: edit)
     :param "shell":
-        Whether to incldude all shell-related commands.
+        Whether to include all shell-related commands.
         (commands: shell)
     :param "python":
         Whether to include all python-related commands.
         (commands: py, run_pyscript)
     :param "scripts":
         Whether to include all script-related commands.
-        (commands: run_script, run_pyscript)
+        (commands: run_script, _relative_run_script, run_pyscript)
     :param history:
         Whether to include or remove the history command.
 
@@ -83,13 +92,14 @@ def setup(  # noqa: C901
         "help",
         "history",
         "quit",
+        "_eof",
         "set",
     }
 
     if "base" not in sets:
         commands.add("alias")
         commands.add("macro")
-        commands.add("shortcut")
+        commands.add("shortcuts")
     if "file" in sets:
         commands.add("edit")
     if "shell" in sets:
@@ -120,32 +130,32 @@ def setup(  # noqa: C901
 
 
 def patch(
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     *patches: Literal[
-        "pexcept",
+        "format_exception",
         # <format-break>
     ],
 ) -> None:
     """
     Applies a set of patches to a command interpreter.
 
-    :param "pexcept":
-        Slightly modifies the `pexcept` function to improve error reporting and supress the
-        superfluous warning text.
+    :param "format_exception":
+        Slightly modifies the `format_exception` function to supress the
+        superfluous warning text advertising the `set debug true` command.
 
     """
-    if "pexcept" in patches:
-        cmd.pexcept = types.MethodType(_cmd_pexcept, cmd)
+    if "format_exception" in patches:
+        cmd.format_exception = types.MethodType(_cmd_format_exception, cmd)
 
 
 def debug(
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     value: bool = True,
 ) -> None:
     """
-    Sets a the debug configuration item on a command interpreter.
+    Sets the debug configuration item on a command interpreter.
 
     :param cmd:
         Instance of the command interpreter.
@@ -166,16 +176,16 @@ def debug(
 
 @overload
 def configure(
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     name: Literal["debug"],
-    value: None,
+    value: bool,
 ) -> None: ...
 
 
 @overload
 def configure(
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     name: Literal["prompt"],
     value: str,
@@ -183,7 +193,7 @@ def configure(
 
 
 def configure(
-    cmd: _cmd.Cmd,
+    cmd: cmd2.Cmd,
     /,
     name: str,
     value: Any,
@@ -210,7 +220,7 @@ def configure(
         cmd.prompt = str(value)
     else:
         raise ValueError(
-            f"The configuration item {name!r} does not exists or is not "
+            f"The configuration item {name!r} does not exist or is not "
             "available to the command interpreter."
         )
 
@@ -218,7 +228,7 @@ def configure(
 # ###################### COMMANDS ##########################
 
 
-def exists(cmd: _cmd.Cmd, /, command: str) -> bool:
+def exists(cmd: cmd2.Cmd, /, command: str) -> bool:
     """
     Returns whether a command exists.
 
@@ -228,10 +238,10 @@ def exists(cmd: _cmd.Cmd, /, command: str) -> bool:
         Name of the command to look for.
 
     """
-    return getattr(cmd, f"do_{command}", None) is not None
+    return callable(getattr(cmd, f"do_{command}", None))
 
 
-def hide(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
+def hide(cmd: cmd2.Cmd, /, command: str, *, exist: bool = True) -> None:
     """
     Hides a command.
 
@@ -243,7 +253,7 @@ def hide(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
         Whether the command must exist.
 
     """
-    if getattr(cmd, f"do_{command}", None) is None:
+    if not exists(cmd, command):
         if exist:
             raise AttributeError(
                 f"Command {command!r} not found.",
@@ -259,7 +269,7 @@ def hide(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
         cmd.hidden_commands.append(command)
 
 
-def remove(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
+def remove(cmd: cmd2.Cmd, /, command: str, *, exist: bool = True) -> None:
     """
     Removes a command.
 
@@ -271,7 +281,7 @@ def remove(cmd: _cmd.Cmd, /, command: str, *, exist: bool = True) -> None:
         Whether the command must exist.
 
     """
-    if getattr(cmd, f"do_{command}", None) is None:
+    if not exists(cmd, command):
         if exist:
             raise AttributeError(
                 f"Command {command!r} not found.",
@@ -295,16 +305,16 @@ if TYPE_CHECKING:
     from typing import Optional, Sequence, Type
 
     from cmd2.argparse_completer import ArgparseCompleter
-    from cmd2.argparse_custom import Cmd2HelpFormatter
+    from cmd2.rich_utils import Cmd2HelpFormatter, HelpContent
 
     @contextmanager
     def argparser(
         prog: Optional[str] = None,
         usage: Optional[str] = None,
-        description: Optional[str] = None,
-        epilog: Optional[str] = None,
+        description: Optional[HelpContent] = None,
+        epilog: Optional[HelpContent] = None,
         parents: Sequence[argparse.ArgumentParser] = (),
-        formatter_class: Type[argparse.HelpFormatter] = Cmd2HelpFormatter,
+        formatter_class: Type[Cmd2HelpFormatter] = Cmd2HelpFormatter,
         prefix_chars: str = "-",
         fromfile_prefix_chars: Optional[str] = None,
         argument_default: Optional[str] = None,
@@ -312,9 +322,11 @@ if TYPE_CHECKING:
         add_help: bool = True,
         allow_abbrev: bool = True,
         exit_on_error: bool = True,
+        suggest_on_error: bool = False,
+        color: bool = False,
         *,
-        ap_completer_type: Optional[Type["ArgparseCompleter"]] = None,
-    ) -> Generator[_cmd.Cmd2ArgumentParser, None, None]:
+        completer_class: Optional[Type["ArgparseCompleter"]] = None,
+    ) -> Generator[Cmd2ArgumentParser, None, None]:
         """
         Returns a new argument parser as context object.
 
@@ -344,10 +356,15 @@ if TYPE_CHECKING:
             Allow long options to be abbreviated unambiguously
         :param exit_on_error: (cmd)
             Determines whether or not ArgumentParser exits with error info when an error occurs
-        :param ap_completer_type: (cmd2)
-            optional parameter which specifies a subclass of ArgparseCompleter for custom tab
-            completion behavior on this parser. If this is None or not present, then cmd2 will use
-            argparse_completer.DEFAULT_AP_COMPLETER when tab completing this parser's arguments
+        :param suggest_on_error: (cmd)
+            Enables suggestions for mistyped argument choices and subparser
+            names (default: ``False``)
+        :param color: (cmd)
+            Allow color output in help messages (default: ``False``)
+        :param completer_class: (cmd2)
+            optional parameter which specifies a subclass of ArgparseCompleter
+            for custom completion behavior on this parser. If this is None, then
+            it will be set to argparse_completer.DEFAULT_ARGPARSE_COMPLETER.
 
         """
         ...
@@ -358,39 +375,52 @@ else:
     def argparser(
         *args: Any,
         **kwargs: Any,
-    ) -> Generator[_cmd.Cmd2ArgumentParser, None, None]:
-        yield _cmd.Cmd2ArgumentParser(*args, **kwargs)
+    ) -> Generator[Cmd2ArgumentParser, None, None]:
+        yield Cmd2ArgumentParser(*args, **kwargs)
 
 
 # ################################ INTERNALS ###################################
 
 
-def _cmd_pexcept(
-    self: _cmd.Cmd,
-    msg: Any,
-    *,
-    end: str = "\n",
-    apply_style: bool = True,
-) -> None:
-    # Slightly modified variant of 'cmd2.Cmd.pexcept'.
+def _cmd_format_exception(
+    self: cmd2.Cmd,
+    exception: BaseException,
+) -> str:
+    # Slightly modified variant of 'cmd2.Cmd.format_exception'.
+    # fmt: off
 
-    if self.debug and sys.exc_info() != (None, None, None):
-        import traceback
+    console = Cmd2ExceptionConsole(file=sys.stderr)
+    with console.capture() as capture:
+        # Only print a traceback if we're in debug mode and one exists.
+        if self.debug and sys.exc_info() != (None, None, None):
+            traceback = Traceback(**self.traceback_kwargs)
+            console.print(traceback, end="")
 
-        traceback.print_exc()
+        else:
+            # Print the exception in the same style Rich uses after a traceback.
+            exception_str = str(exception)
 
-    if isinstance(msg, Exception):
-        final_msg = f"{type(msg).__name__}: {msg}"
-    else:
-        final_msg = str(msg)
+            if exception_str:
+                highlighter = ReprHighlighter()
 
-    if apply_style:
-        final_msg = _ansi.style_error(final_msg)
+                final_msg = Text.assemble(
+                    (f"{type(exception).__name__}: ", "traceback.exc_type"),
+                    highlighter(exception_str),
+                )
+            else:
+                final_msg = Text(f"{type(exception).__name__}", style="traceback.exc_type")
 
-    if """ always suppress warning """:
-        pass
-    elif not self.debug and "debug" in self.settables:
-        warning = "\nTo enable full traceback, run the following command: 'set debug true'"  # noqa: B950
-        final_msg += _ansi.style_warning(warning)
+            # If not in debug mode and the 'debug' setting is available,
+            # inform the user how to enable full tracebacks.
+            # if not self.debug and "debug" in self.settables:
+            #     help_msg = Text.assemble(
+            #         "\n\n",
+            #         ("To enable full traceback, run the following command: ", Cmd2Style.WARNING),
+            #         ("set debug true", Cmd2Style.COMMAND_LINE),
+            #     )
+            #     final_msg.append(help_msg)
 
-    self.perror(final_msg, end=end, apply_style=False)
+            console.print(final_msg)
+
+    return capture.get()
+    # fmt: on
